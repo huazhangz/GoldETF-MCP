@@ -3,6 +3,7 @@
  * Design matrices in this project are tiny (k <= ~20 columns), so this is
  * numerically adequate and keeps the code readable.
  */
+import { invert } from "./linalg.js";
 
 export interface OlsResult {
   coef: number[];
@@ -12,35 +13,6 @@ export interface OlsResult {
   nobs: number;
   /** Akaike information criterion, computed as in statsmodels (Gaussian log-likelihood). */
   aic: number;
-}
-
-function invert(matrix: number[][]): number[][] {
-  const n = matrix.length;
-  // Scale-relative tolerance so tiny-valued series (e.g. log differences) are not misjudged.
-  const tol = 1e-12 * Math.max(...matrix.map((row, i) => Math.abs(row[i]!)), 1e-300);
-  const a = matrix.map((row, i) => [...row, ...Array.from({ length: n }, (_, j) => (i === j ? 1 : 0))]);
-  for (let col = 0; col < n; col++) {
-    let pivot = col;
-    for (let r = col + 1; r < n; r++) {
-      if (Math.abs(a[r]![col]!) > Math.abs(a[pivot]![col]!)) pivot = r;
-    }
-    if (Math.abs(a[pivot]![col]!) < tol) {
-      throw new Error(
-        "Regression is singular: the series is constant or perfectly deterministic (e.g. an exact sine wave). " +
-          "Check the data, or set a smaller fixed number of lags.",
-      );
-    }
-    [a[col], a[pivot]] = [a[pivot]!, a[col]!];
-    const p = a[col]![col]!;
-    for (let j = 0; j < 2 * n; j++) a[col]![j]! /= p;
-    for (let r = 0; r < n; r++) {
-      if (r === col) continue;
-      const f = a[r]![col]!;
-      if (f === 0) continue;
-      for (let j = 0; j < 2 * n; j++) a[r]![j]! -= f * a[col]![j]!;
-    }
-  }
-  return a.map((row) => row.slice(n));
 }
 
 /** Fit y = X b + e. `X` is row-major (one row per observation). */

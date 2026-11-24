@@ -1,6 +1,6 @@
 {
   "name": "fred-timeseries-mcp",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "MCP server for FRED economic data with built-in time-series diagnostics (ADF, KPSS, ACF/PACF, Ljung-Box).",
   "type": "module",
   "license": "MIT",

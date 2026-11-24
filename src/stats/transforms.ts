@@ -3,7 +3,14 @@ export interface Point {
   value: number;
 }
 
-export type Transform = "none" | "log" | "diff" | "log_diff" | "seasonal_diff" | "log_diff_seasonal_diff";
+export type Transform =
+  | "none"
+  | "log"
+  | "diff"
+  | "log_diff"
+  | "seasonal_diff"
+  | "log_seasonal_diff"
+  | "log_diff_seasonal_diff";
 
 /**
  * Apply a named transform to an ordered series. Differencing drops leading points,
@@ -23,7 +30,7 @@ export function applyTransform(points: Point[], transform: Transform, seasonalPe
   if (transform === "diff" || transform === "log_diff" || transform === "log_diff_seasonal_diff") {
     out = difference(out, 1);
   }
-  if (transform === "seasonal_diff" || transform === "log_diff_seasonal_diff") {
+  if (transform === "seasonal_diff" || transform === "log_seasonal_diff" || transform === "log_diff_seasonal_diff") {
     out = difference(out, seasonalPeriod);
   }
   return out;

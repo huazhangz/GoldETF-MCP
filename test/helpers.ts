@@ -4,7 +4,7 @@ import { FredClient } from "../src/fred/client.js";
 import { createServer } from "../src/server.js";
 
 /** Deterministic GVZ-like daily series: log-random-walk around ~18, business days only. */
-export function syntheticDaily(start = "2008-06-02", days = 900, seed = 7): { date: string; value: string }[] {
+export function syntheticDaily(start = "2008-06-02", days = 2600, seed = 7): { date: string; value: string }[] {
   let s = seed;
   const rand = () => {
     s = (s * 1103515245 + 12345) % 2 ** 31;
@@ -16,7 +16,8 @@ export function syntheticDaily(start = "2008-06-02", days = 900, seed = 7): { da
   while (out.length < days) {
     const dow = d.getUTCDay();
     if (dow !== 0 && dow !== 6) {
-      logv += 0.04 * rand();
+      // mean-reverting log level, like an implied-volatility index
+      logv += 0.01 * (Math.log(18) - logv) + 0.06 * rand();
       // sprinkle in a FRED-style missing value
       out.push({ date: d.toISOString().slice(0, 10), value: out.length % 97 === 50 ? "." : Math.exp(logv).toFixed(2) });
     }
@@ -33,6 +34,7 @@ export function fakeFetch(route: Route): { fetch: typeof fetch; calls: URL[] } {
     const url = new URL(typeof input === "string" ? input : input instanceof URL ? input.href : input.url);
     calls.push(url);
     const { status = 200, body } = route(url);
+    if (typeof body === "string") return new Response(body, { status, headers: { "content-type": "text/csv" } });
     return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
   }) as typeof fetch;
   return { fetch: impl, calls };

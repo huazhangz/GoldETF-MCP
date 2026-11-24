@@ -43,6 +43,16 @@ describe("FredClient error mapping", () => {
     expect(await kindOf(c.getSeries("GVZCLS"))).toBe("network");
   });
 
+  it("falls back to the keyless CSV endpoint and parses blanks as missing", async () => {
+    const f = fakeFetch(() => ({ body: "observation_date,GVZCLS\n2020-01-01,15.2\n2020-01-02,\n2020-01-03,16" }));
+    const c = new FredClient({ apiKey: undefined, fetch: f.fetch });
+    expect(await c.getObservations("GVZCLS", { start: "2020-01-02" })).toEqual([
+      { date: "2020-01-02", value: null },
+      { date: "2020-01-03", value: 16 },
+    ]);
+    expect(f.calls[0]!.searchParams.get("id")).toBe("GVZCLS");
+  });
+
   it("parses missing values encoded as '.'", async () => {
     const f = fakeFetch(() => ({
       body: { observations: [{ date: "2020-01-01", value: "15.2" }, { date: "2020-01-02", value: "." }] },

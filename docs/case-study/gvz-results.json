@@ -1,0 +1,2664 @@
+{
+ "generated": "2026-11-24",
+ "sample_end": "2026-04-30",
+ "steps": [
+  {
+   "title": "Data: monthly averages of daily GVZ",
+   "tool": "fred_get_observations",
+   "args": {
+    "series_id": "GVZCLS",
+    "frequency": "m",
+    "end": "2026-04-30",
+    "max_points": 0
+   },
+   "result": {
+    "series": "GVZCLS (m, avg)",
+    "transform": "none",
+    "n": 215,
+    "range": "2008-06-01 to 2026-04-01",
+    "missing_dropped": 165,
+    "summary": {
+     "n": 215,
+     "mean": 18.8289,
+     "sd": 6.73181,
+     "min": 9.39273,
+     "p25": 14.9036,
+     "median": 17.571,
+     "p75": 20.7741,
+     "max": 55.0674
+    },
+    "points_returned": 0,
+    "points": []
+   },
+   "ms": 544
+  },
+  {
+   "title": "STL decomposition of log(GVZ)",
+   "tool": "ts_decompose_stl",
+   "args": {
+    "series_id": "GVZCLS",
+    "frequency": "m",
+    "end": "2026-04-30",
+    "transform": "log"
+   },
+   "result": {
+    "series": "GVZCLS (m, avg)",
+    "transform": "log",
+    "n": 215,
+    "range": "2008-06-01 to 2026-04-01",
+    "missing_dropped": 165,
+    "trend_strength": 0.6862,
+    "seasonal_strength": 0.03044,
+    "seasonal_peak_to_trough": 0.08099,
+    "remainder_rms": 0.1718,
+    "interpretation": "Seasonality is negligible (F_S = 0.030; peak-to-trough 0.081 vs remainder RMS 0.172): seasonal terms are not worth modeling. Trend/cycle is strong (F_T = 0.686).",
+    "seasonal_effects": [
+     {
+      "position": "Jan",
+      "effect": -0.02447
+     },
+     {
+      "position": "Feb",
+      "effect": -0.001018
+     },
+     {
+      "position": "Mar",
+      "effect": -0.009314
+     },
+     {
+      "position": "Apr",
+      "effect": -0.01141
+     },
+     {
+      "position": "May",
+      "effect": 0.02997
+     },
+     {
+      "position": "Jun",
+      "effect": -0.01173
+     },
+     {
+      "position": "Jul",
+      "effect": -0.02803
+     },
+     {
+      "position": "Aug",
+      "effect": -0.01971
+     },
+     {
+      "position": "Sep",
+      "effect": -0.009611
+     },
+     {
+      "position": "Oct",
+      "effect": 0.05296
+     },
+     {
+      "position": "Nov",
+      "effect": 0.03061
+     },
+     {
+      "position": "Dec",
+      "effect": 0.001751
+     }
+    ],
+    "largest_shocks": [
+     {
+      "date": "2008-06-01",
+      "remainder": -0.9813,
+      "robustness_weight": 0
+     },
+     {
+      "date": "2008-07-01",
+      "remainder": -0.8151,
+      "robustness_weight": 0
+     },
+     {
+      "date": "2020-03-01",
+      "remainder": 0.722,
+      "robustness_weight": 0
+     },
+     {
+      "date": "2008-08-01",
+      "remainder": -0.6946,
+      "robustness_weight": 0
+     },
+     {
+      "date": "2020-04-01",
+      "remainder": 0.5606,
+      "robustness_weight": 0
+     },
+     {
+      "date": "2011-09-01",
+      "remainder": 0.521,
+      "robustness_weight": 0
+     },
+     {
+      "date": "2011-08-01",
+      "remainder": 0.3573,
+      "robustness_weight": 0.275
+     },
+     {
+      "date": "2011-10-01",
+      "remainder": 0.3522,
+      "robustness_weight": 0.289
+     }
+    ],
+    "stl_parameters": {
+     "period": 12,
+     "seasonal": 2151,
+     "trend": 19,
+     "lowPass": 13,
+     "inner": 1,
+     "outer": 15,
+     "seasonalDeg": 0
+    }
+   },
+   "ms": 60
+  },
+  {
+   "title": "Stationarity across transforms",
+   "tool": "ts_test_stationarity",
+   "args": {
+    "series_id": "GVZCLS",
+    "frequency": "m",
+    "end": "2026-04-30",
+    "transforms": [
+     "none",
+     "log",
+     "log_diff",
+     "log_seasonal_diff",
+     "log_diff_seasonal_diff"
+    ]
+   },
+   "result": {
+    "series": "GVZCLS (m, avg)",
+    "range": "2008-06-01 to 2026-04-01",
+    "missing_dropped": 165,
+    "regression": "c",
+    "alpha": 0.05,
+    "results": [
+     {
+      "transform": "none",
+      "n": 215,
+      "adf": {
+       "statistic": -3.9653,
+       "p_value": 0.001603,
+       "lags": 1,
+       "lag_selection": "aic",
+       "critical_values": {
+        "1%": -3.461,
+        "5%": -2.875,
+        "10%": -2.574
+       }
+      },
+      "kpss": {
+       "statistic": 1.007,
+       "p_value": 0.01,
+       "p_value_note": "true p-value < 0.01",
+       "lags": 4
+      },
+      "conclusion": "conflicting",
+      "explanation": "Both tests reject. Typical of persistent but mean-reverting series (near unit root / long memory) or structural breaks. Do not difference automatically: compare a stationary AR model on levels (d=0) with a d=1 model using ts_fit_arima and ts_backtest, or retry with regression \"ct\"."
+     },
+     {
+      "transform": "log",
+      "n": 215,
+      "adf": {
+       "statistic": -3.3674,
+       "p_value": 0.01212,
+       "lags": 0,
+       "lag_selection": "aic",
+       "critical_values": {
+        "1%": -3.461,
+        "5%": -2.875,
+        "10%": -2.574
+       }
+      },
+      "kpss": {
+       "statistic": 1.0466,
+       "p_value": 0.01,
+       "p_value_note": "true p-value < 0.01",
+       "lags": 4
+      },
+      "conclusion": "conflicting",
+      "explanation": "Both tests reject. Typical of persistent but mean-reverting series (near unit root / long memory) or structural breaks. Do not difference automatically: compare a stationary AR model on levels (d=0) with a d=1 model using ts_fit_arima and ts_backtest, or retry with regression \"ct\"."
+     },
+     {
+      "transform": "log_diff",
+      "n": 214,
+      "adf": {
+       "statistic": -9.9539,
+       "p_value": 2.473e-17,
+       "lags": 3,
+       "lag_selection": "aic",
+       "critical_values": {
+        "1%": -3.462,
+        "5%": -2.875,
+        "10%": -2.574
+       }
+      },
+      "kpss": {
+       "statistic": 0.087764,
+       "p_value": 0.1,
+       "p_value_note": "true p-value > 0.10",
+       "lags": 4
+      },
+      "conclusion": "stationary",
+      "explanation": "ADF rejects a unit root and KPSS does not reject stationarity."
+     },
+     {
+      "transform": "log_seasonal_diff",
+      "n": 203,
+      "adf": {
+       "statistic": -2.8914,
+       "p_value": 0.04635,
+       "lags": 12,
+       "lag_selection": "aic",
+       "critical_values": {
+        "1%": -3.465,
+        "5%": -2.877,
+        "10%": -2.575
+       }
+      },
+      "kpss": {
+       "statistic": 0.5279,
+       "p_value": 0.03538346611227211,
+       "lags": 4
+      },
+      "conclusion": "conflicting",
+      "explanation": "Both tests reject. Typical of persistent but mean-reverting series (near unit root / long memory) or structural breaks. Do not difference automatically: compare a stationary AR model on levels (d=0) with a d=1 model using ts_fit_arima and ts_backtest, or retry with regression \"ct\"."
+     },
+     {
+      "transform": "log_diff_seasonal_diff",
+      "n": 202,
+      "adf": {
+       "statistic": -7.3804,
+       "p_value": 8.501e-11,
+       "lags": 11,
+       "lag_selection": "aic",
+       "critical_values": {
+        "1%": -3.465,
+        "5%": -2.877,
+        "10%": -2.575
+       }
+      },
+      "kpss": {
+       "statistic": 0.018156,
+       "p_value": 0.1,
+       "p_value_note": "true p-value > 0.10",
+       "lags": 4
+      },
+      "conclusion": "stationary",
+      "explanation": "ADF rejects a unit root and KPSS does not reject stationarity."
+     }
+    ]
+   },
+   "ms": 82
+  },
+  {
+   "title": "Reproduce R tseries::adf.test settings (trend + fixed 5 lags) on log(GVZ)",
+   "tool": "ts_test_stationarity",
+   "args": {
+    "series_id": "GVZCLS",
+    "frequency": "m",
+    "end": "2026-04-30",
+    "transform": "log",
+    "regression": "ct",
+    "adf_lags": 5
+   },
+   "result": {
+    "series": "GVZCLS (m, avg)",
+    "range": "2008-06-01 to 2026-04-01",
+    "missing_dropped": 165,
+    "regression": "ct",
+    "alpha": 0.05,
+    "results": [
+     {
+      "transform": "log",
+      "n": 215,
+      "adf": {
+       "statistic": -3.0141,
+       "p_value": 0.1282,
+       "lags": 5,
+       "lag_selection": "fixed",
+       "critical_values": {
+        "1%": -4.003,
+        "5%": -3.432,
+        "10%": -3.14
+       }
+      },
+      "kpss": {
+       "statistic": 0.49295,
+       "p_value": 0.01,
+       "p_value_note": "true p-value < 0.01",
+       "lags": 4
+      },
+      "conclusion": "non_stationary",
+      "explanation": "ADF cannot reject a unit root and KPSS rejects stationarity. Difference the series (try transform \"diff\" or \"log_diff\")."
+     }
+    ]
+   },
+   "ms": 7
+  },
+  {
+   "title": "Autocorrelation, ARCH effects and normality of monthly log changes",
+   "tool": "ts_autocorrelation",
+   "args": {
+    "series_id": "GVZCLS",
+    "frequency": "m",
+    "end": "2026-04-30",
+    "transform": "log_diff",
+    "max_lag": 24
+   },
+   "result": {
+    "series": "GVZCLS (m, avg)",
+    "transform": "log_diff",
+    "n": 214,
+    "range": "2008-07-01 to 2026-04-01",
+    "missing_dropped": 165,
+    "confidence_bound": 0.134,
+    "significant_acf_lags": [
+     3
+    ],
+    "significant_pacf_lags": [
+     3
+    ],
+    "acf": [
+     0.03093,
+     -0.08951,
+     -0.1439,
+     -0.1276,
+     0.03217,
+     -0.01032,
+     -0.03012,
+     -0.02482,
+     -0.01124,
+     0.05034,
+     -0.06751,
+     0.01718,
+     -0.07769,
+     -0.01471,
+     0.01252,
+     -0.04726,
+     0.03315,
+     0.0087,
+     0.1078,
+     0.02069,
+     -0.01463,
+     -0.1134,
+     0.0865,
+     0.05398
+    ],
+    "pacf": [
+     0.03093,
+     -0.09056,
+     -0.1394,
+     -0.1317,
+     0.01088,
+     -0.05689,
+     -0.06518,
+     -0.0444,
+     -0.02607,
+     0.02159,
+     -0.09772,
+     0.01165,
+     -0.09664,
+     -0.03113,
+     -0.03255,
+     -0.07795,
+     -0.00475,
+     -0.0206,
+     0.08824,
+     -0.00859,
+     0.01098,
+     -0.1111,
+     0.132,
+     0.01424
+    ],
+    "ljung_box": [
+     {
+      "lag": 6,
+      "statistic": 10.332,
+      "df": 6,
+      "p_value": 0.111
+     },
+     {
+      "lag": 12,
+      "statistic": 12.381,
+      "df": 12,
+      "p_value": 0.416
+     },
+     {
+      "lag": 18,
+      "statistic": 14.653,
+      "df": 18,
+      "p_value": 0.686
+     },
+     {
+      "lag": 24,
+      "statistic": 23.177,
+      "df": 24,
+      "p_value": 0.509
+     }
+    ],
+    "white_noise": "autocorrelation remains (smallest Ljung-Box p = 0.0391 across lags 1-24)",
+    "arch_effects": {
+     "arch_lm": {
+      "lags": 12,
+      "statistic": 3.2084,
+      "p_value": 0.994
+     },
+     "significant_squared_acf_lags": [],
+     "conclusion": "No ARCH effects detected: a GARCH model is not warranted at this frequency; constant variance is adequate."
+    },
+    "normality": {
+     "jarque_bera": 404,
+     "p_value": "<1e-4",
+     "skewness": 1.651,
+     "kurtosis": 8.865,
+     "conclusion": "Not normal (skewness 1.65, kurtosis 8.87 vs 3): Gaussian intervals will misstate tail risk; consider a Student-t distribution."
+    },
+    "note": "With many lags, ~5% of ACF/PACF values exceed the band by chance alone; isolated small spikes are weak evidence."
+   },
+   "ms": 9
+  },
+  {
+   "title": "Same diagnostics on DAILY log changes",
+   "tool": "ts_autocorrelation",
+   "args": {
+    "series_id": "GVZCLS",
+    "end": "2026-04-30",
+    "transform": "log_diff",
+    "max_lag": 24
+   },
+   "result": {
+    "series": "GVZCLS",
+    "transform": "log_diff",
+    "n": 4507,
+    "range": "2008-06-04 to 2026-04-30",
+    "missing_dropped": 165,
+    "confidence_bound": 0.0292,
+    "significant_acf_lags": [
+     1,
+     2,
+     3,
+     6,
+     8,
+     15,
+     19
+    ],
+    "significant_pacf_lags": [
+     1,
+     2,
+     3,
+     6,
+     7,
+     8,
+     12,
+     15
+    ],
+    "acf": [
+     -0.06851,
+     -0.06497,
+     -0.04005,
+     0.02412,
+     -0.02098,
+     -0.02977,
+     -0.02422,
+     -0.03167,
+     -0.01363,
+     0.02869,
+     -0.024,
+     -0.02528,
+     0.01104,
+     0.0004469,
+     -0.03169,
+     0.004485,
+     -0.00669,
+     0.01003,
+     0.03043,
+     -0.01455,
+     0.0152,
+     -0.00091,
+     -0.008728,
+     -0.001755
+    ],
+    "pacf": [
+     -0.06851,
+     -0.06999,
+     -0.05009,
+     0.01298,
+     -0.02466,
+     -0.03301,
+     -0.03088,
+     -0.04327,
+     -0.02581,
+     0.0185,
+     -0.02776,
+     -0.02961,
+     0.002067,
+     -0.01017,
+     -0.03633,
+     -0.002472,
+     -0.01578,
+     0.003514,
+     0.02906,
+     -0.01572,
+     0.0163,
+     0.0001494,
+     -0.0138,
+     -0.001435
+    ],
+    "ljung_box": [
+     {
+      "lag": 6,
+      "statistic": 56.062,
+      "df": 6,
+      "p_value": "<1e-4"
+     },
+     {
+      "lag": 12,
+      "statistic": 73.291,
+      "df": 12,
+      "p_value": "<1e-4"
+     },
+     {
+      "lag": 18,
+      "statistic": 79.136,
+      "df": 18,
+      "p_value": "<1e-4"
+     },
+     {
+      "lag": 24,
+      "statistic": 85.698,
+      "df": 24,
+      "p_value": "<1e-4"
+     }
+    ],
+    "white_noise": "autocorrelation remains (smallest Ljung-Box p = 7.72e-11 across lags 1-24)",
+    "arch_effects": {
+     "arch_lm": {
+      "lags": 12,
+      "statistic": 419.23,
+      "p_value": "<1e-4"
+     },
+     "significant_squared_acf_lags": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      10,
+      12,
+      14
+     ],
+     "conclusion": "ARCH effects present (volatility clustering): a GARCH-type variance model is warranted."
+    },
+    "normality": {
+     "jarque_bera": 10104,
+     "p_value": "<1e-4",
+     "skewness": 0.8552,
+     "kurtosis": 10.13,
+     "conclusion": "Not normal (skewness 0.86, kurtosis 10.13 vs 3): Gaussian intervals will misstate tail risk; consider a Student-t distribution."
+    },
+    "note": "With many lags, ~5% of ACF/PACF values exceed the band by chance alone; isolated small spikes are weak evidence."
+   },
+   "ms": 28
+  },
+  {
+   "title": "ARIMA candidates on log(GVZ)",
+   "tool": "ts_fit_arima",
+   "args": {
+    "series_id": "GVZCLS",
+    "frequency": "m",
+    "end": "2026-04-30",
+    "transform": "log",
+    "forecast_horizon": 5
+   },
+   "result": {
+    "series": "GVZCLS (m, avg)",
+    "transform": "log",
+    "n": 215,
+    "range": "2008-06-01 to 2026-04-01",
+    "missing_dropped": 165,
+    "candidates_by_d": [
+     {
+      "d": 0,
+      "ranking": [
+       {
+        "order": [
+         1,
+         0,
+         0
+        ],
+        "aicc": -228.523,
+        "delta_aicc": 0,
+        "bic": -218.525,
+        "loglik": 117.319,
+        "residuals_white_noise": true,
+        "residual_ljung_box": [
+         {
+          "lag": 12,
+          "p_value": 0.86
+         },
+         {
+          "lag": 24,
+          "p_value": 0.775
+         }
+        ],
+        "warnings": []
+       },
+       {
+        "order": [
+         1,
+         0,
+         1
+        ],
+        "aicc": -228.387,
+        "delta_aicc": 0.136,
+        "bic": -215.095,
+        "loglik": 118.289,
+        "residuals_white_noise": true,
+        "residual_ljung_box": [
+         {
+          "lag": 12,
+          "p_value": 0.927
+         },
+         {
+          "lag": 24,
+          "p_value": 0.804
+         }
+        ],
+        "warnings": [
+         "ma1 is not significant (p = 0.157)."
+        ]
+       },
+       {
+        "order": [
+         2,
+         0,
+         0
+        ],
+        "aicc": -228.326,
+        "delta_aicc": 0.1974,
+        "bic": -215.034,
+        "loglik": 118.258,
+        "residuals_white_noise": true,
+        "residual_ljung_box": [
+         {
+          "lag": 12,
+          "p_value": 0.927
+         },
+         {
+          "lag": 24,
+          "p_value": 0.805
+         }
+        ],
+        "warnings": [
+         "ar2 is not significant (p = 0.169)."
+        ]
+       }
+      ]
+     },
+     {
+      "d": 1,
+      "ranking": [
+       {
+        "order": [
+         1,
+         1,
+         1
+        ],
+        "aicc": -224.713,
+        "delta_aicc": 0,
+        "bic": -211.441,
+        "loglik": 116.452,
+        "residuals_white_noise": true,
+        "residual_ljung_box": [
+         {
+          "lag": 12,
+          "p_value": 0.628
+         },
+         {
+          "lag": 24,
+          "p_value": 0.727
+         }
+        ],
+        "warnings": [
+         "drift is not significant (p = 0.720).",
+         "MA inverse root 0.959 is close to 1 and nearly cancels the differencing: the series is likely over-differenced (try d = 0 with an AR term)."
+        ]
+       },
+       {
+        "order": [
+         2,
+         1,
+         2
+        ],
+        "aicc": -224.088,
+        "delta_aicc": 0.6253,
+        "bic": -204.298,
+        "loglik": 118.247,
+        "residuals_white_noise": true,
+        "residual_ljung_box": [
+         {
+          "lag": 12,
+          "p_value": 0.783
+         },
+         {
+          "lag": 24,
+          "p_value": 0.809
+         }
+        ],
+        "warnings": [
+         "drift is not significant (p = 0.788).",
+         "ar2 is not significant (p = 0.454).",
+         "ma2 is not significant (p = 0.741).",
+         "MA inverse root 0.902 is close to 1 and nearly cancels the differencing: the series is likely over-differenced (try d = 0 with an AR term)."
+        ]
+       },
+       {
+        "order": [
+         0,
+         1,
+         0
+        ],
+        "aicc": -219.992,
+        "delta_aicc": 4.721,
+        "bic": -213.317,
+        "loglik": 112.024,
+        "residuals_white_noise": true,
+        "residual_ljung_box": [
+         {
+          "lag": 12,
+          "p_value": 0.416
+         },
+         {
+          "lag": 24,
+          "p_value": 0.509
+         }
+        ],
+        "warnings": [
+         "drift is not significant (p = 0.928)."
+        ]
+       },
+       {
+        "order": [
+         0,
+         1,
+         1
+        ],
+        "aicc": -218.182,
+        "delta_aicc": 6.531,
+        "bic": -208.199,
+        "loglik": 112.148,
+        "residuals_white_noise": true,
+        "residual_ljung_box": [
+         {
+          "lag": 12,
+          "p_value": 0.394
+         },
+         {
+          "lag": 24,
+          "p_value": 0.489
+         }
+        ],
+        "warnings": [
+         "drift is not significant (p = 0.932).",
+         "ma1 is not significant (p = 0.616)."
+        ]
+       },
+       {
+        "order": [
+         1,
+         1,
+         0
+        ],
+        "aicc": -218.14,
+        "delta_aicc": 6.573,
+        "bic": -208.157,
+        "loglik": 112.127,
+        "residuals_white_noise": true,
+        "residual_ljung_box": [
+         {
+          "lag": 12,
+          "p_value": 0.385
+         },
+         {
+          "lag": 24,
+          "p_value": 0.483
+         }
+        ],
+        "warnings": [
+         "drift is not significant (p = 0.931).",
+         "ar1 is not significant (p = 0.650)."
+        ]
+       }
+      ]
+     }
+    ],
+    "selected": [
+     {
+      "order": [
+       1,
+       0,
+       0
+      ],
+      "coefficients": [
+       {
+        "name": "mean",
+        "estimate": 2.9164,
+        "std_err": 0.08812,
+        "p_value": "<1e-4"
+       },
+       {
+        "name": "ar1",
+        "estimate": 0.89532,
+        "std_err": 0.03059,
+        "p_value": "<1e-4"
+       },
+       {
+        "name": "sigma2",
+        "estimate": 0.019512,
+        "std_err": 0.001882
+       }
+      ],
+      "ar_inverse_root_moduli": [
+       0.8953
+      ],
+      "ma_inverse_root_moduli": [],
+      "residual_diagnostics": {
+       "ljung_box": [
+        {
+         "lag": 12,
+         "p_value": 0.86
+        },
+        {
+         "lag": 24,
+         "p_value": 0.775
+        }
+       ],
+       "arch_lm_p": 0.999,
+       "jarque_bera_p": "<1e-4",
+       "skewness": 1.71,
+       "kurtosis": 8.67,
+       "white_noise": true
+      },
+      "warnings": [],
+      "forecast": [
+       {
+        "date": "2026-05-01",
+        "mean": 3.3617,
+        "sd": 0.1397,
+        "lo80": 3.1827,
+        "hi80": 3.5407,
+        "lo95": 3.0879,
+        "hi95": 3.6354,
+        "level": {
+         "median": 28.837,
+         "mean": 29.12,
+         "lo80": 24.111,
+         "hi80": 34.491,
+         "lo95": 21.931,
+         "hi95": 37.919
+        }
+       },
+       {
+        "date": "2026-06-01",
+        "mean": 3.3151,
+        "sd": 0.1875,
+        "lo80": 3.0748,
+        "hi80": 3.5553,
+        "lo95": 2.9476,
+        "hi95": 3.6825,
+        "level": {
+         "median": 27.524,
+         "mean": 28.012,
+         "lo80": 21.645,
+         "hi80": 34.999,
+         "lo95": 19.06,
+         "hi95": 39.747
+        }
+       },
+       {
+        "date": "2026-07-01",
+        "mean": 3.2733,
+        "sd": 0.2184,
+        "lo80": 2.9935,
+        "hi80": 3.5532,
+        "lo95": 2.8453,
+        "hi95": 3.7013,
+        "level": {
+         "median": 26.399,
+         "mean": 27.036,
+         "lo80": 19.955,
+         "hi80": 34.924,
+         "lo95": 17.207,
+         "hi95": 40.501
+        }
+       },
+       {
+        "date": "2026-08-01",
+        "mean": 3.236,
+        "sd": 0.2403,
+        "lo80": 2.928,
+        "hi80": 3.5439,
+        "lo95": 2.765,
+        "hi95": 3.7069,
+        "level": {
+         "median": 25.431,
+         "mean": 26.175,
+         "lo80": 18.69,
+         "hi80": 34.602,
+         "lo95": 15.879,
+         "hi95": 40.728
+        }
+       },
+       {
+        "date": "2026-09-01",
+        "mean": 3.2025,
+        "sd": 0.2565,
+        "lo80": 2.8738,
+        "hi80": 3.5312,
+        "lo95": 2.6998,
+        "hi95": 3.7052,
+        "level": {
+         "median": 24.594,
+         "mean": 25.416,
+         "lo80": 17.704,
+         "hi80": 34.166,
+         "lo95": 14.876,
+         "hi95": 40.66
+        }
+       }
+      ]
+     },
+     {
+      "order": [
+       1,
+       1,
+       1
+      ],
+      "coefficients": [
+       {
+        "name": "drift",
+        "estimate": -0.00099191,
+        "std_err": 0.002772,
+        "p_value": 0.72
+       },
+       {
+        "name": "ar1",
+        "estimate": 0.84425,
+        "std_err": 0.06511,
+        "p_value": "<1e-4"
+       },
+       {
+        "name": "ma1",
+        "estimate": -0.95927,
+        "std_err": 0.03863,
+        "p_value": "<1e-4"
+       },
+       {
+        "name": "sigma2",
+        "estimate": 0.019676,
+        "std_err": 0.001903
+       }
+      ],
+      "ar_inverse_root_moduli": [
+       0.8443
+      ],
+      "ma_inverse_root_moduli": [
+       0.9593
+      ],
+      "residual_diagnostics": {
+       "ljung_box": [
+        {
+         "lag": 12,
+         "p_value": 0.628
+        },
+        {
+         "lag": 24,
+         "p_value": 0.727
+        }
+       ],
+       "arch_lm_p": 0.997,
+       "jarque_bera_p": "<1e-4",
+       "skewness": 1.8,
+       "kurtosis": 9.69,
+       "white_noise": true
+      },
+      "warnings": [
+       "drift is not significant (p = 0.720).",
+       "MA inverse root 0.959 is close to 1 and nearly cancels the differencing: the series is likely over-differenced (try d = 0 with an AR term)."
+      ],
+      "forecast": [
+       {
+        "date": "2026-05-01",
+        "mean": 3.3535,
+        "sd": 0.1403,
+        "lo80": 3.1738,
+        "hi80": 3.5333,
+        "lo95": 3.0786,
+        "hi95": 3.6285,
+        "level": {
+         "median": 28.604,
+         "mean": 28.886,
+         "lo80": 23.897,
+         "hi80": 34.237,
+         "lo95": 21.728,
+         "hi95": 37.655
+        }
+       },
+       {
+        "date": "2026-06-01",
+        "mean": 3.3025,
+        "sd": 0.1873,
+        "lo80": 3.0625,
+        "hi80": 3.5426,
+        "lo95": 2.9354,
+        "hi95": 3.6697,
+        "level": {
+         "median": 27.182,
+         "mean": 27.663,
+         "lo80": 21.381,
+         "hi80": 34.557,
+         "lo95": 18.829,
+         "hi95": 39.239
+        }
+       },
+       {
+        "date": "2026-07-01",
+        "mean": 3.2594,
+        "sd": 0.2175,
+        "lo80": 2.9806,
+        "hi80": 3.5381,
+        "lo95": 2.8331,
+        "hi95": 3.6856,
+        "level": {
+         "median": 26.033,
+         "mean": 26.656,
+         "lo80": 19.7,
+         "hi80": 34.401,
+         "lo95": 16.998,
+         "hi95": 39.87
+        }
+       },
+       {
+        "date": "2026-08-01",
+        "mean": 3.2227,
+        "sd": 0.239,
+        "lo80": 2.9165,
+        "hi80": 3.529,
+        "lo95": 2.7544,
+        "hi95": 3.6911,
+        "level": {
+         "median": 25.097,
+         "mean": 25.823,
+         "lo80": 18.476,
+         "hi80": 34.089,
+         "lo95": 15.711,
+         "hi95": 40.089
+        }
+       },
+       {
+        "date": "2026-09-01",
+        "mean": 3.1917,
+        "sd": 0.2551,
+        "lo80": 2.8647,
+        "hi80": 3.5186,
+        "lo95": 2.6917,
+        "hi95": 3.6917,
+        "level": {
+         "median": 24.329,
+         "mean": 25.133,
+         "lo80": 17.544,
+         "hi80": 33.737,
+         "lo95": 14.756,
+         "hi95": 40.111
+        }
+       }
+      ]
+     }
+    ],
+    "guidance": [
+     "AICc ranks models only within the same d; differences under 2 are negligible, so prefer the simpler model among near-ties.",
+     "d=0 (mean-reverting levels) and d=1 (unit root) models are fitted to different data, so their AICc values are not comparable. Decide between them with ts_backtest.",
+     "Ljung-Box is an adequacy check, not a selection criterion: several models usually pass, and adding terms until one passes overfits.",
+     "Residuals are non-normal (kurtosis 8.67): Gaussian intervals misstate tail risk; compare a Student-t model with ts_fit_garch / ts_backtest."
+    ]
+   },
+   "ms": 196
+  },
+  {
+   "title": "The course project's model: ARIMA(2,1,2)",
+   "tool": "ts_fit_arima",
+   "args": {
+    "series_id": "GVZCLS",
+    "frequency": "m",
+    "end": "2026-04-30",
+    "transform": "log",
+    "orders": [
+     [
+      2,
+      1,
+      2
+     ]
+    ],
+    "forecast_horizon": 5
+   },
+   "result": {
+    "series": "GVZCLS (m, avg)",
+    "transform": "log",
+    "n": 215,
+    "range": "2008-06-01 to 2026-04-01",
+    "missing_dropped": 165,
+    "candidates_by_d": [
+     {
+      "d": 1,
+      "ranking": [
+       {
+        "order": [
+         2,
+         1,
+         2
+        ],
+        "aicc": -224.088,
+        "delta_aicc": 0,
+        "bic": -204.298,
+        "loglik": 118.247,
+        "residuals_white_noise": true,
+        "residual_ljung_box": [
+         {
+          "lag": 12,
+          "p_value": 0.783
+         },
+         {
+          "lag": 24,
+          "p_value": 0.809
+         }
+        ],
+        "warnings": [
+         "drift is not significant (p = 0.788).",
+         "ar2 is not significant (p = 0.454).",
+         "ma2 is not significant (p = 0.741).",
+         "MA inverse root 0.902 is close to 1 and nearly cancels the differencing: the series is likely over-differenced (try d = 0 with an AR term)."
+        ]
+       }
+      ]
+     }
+    ],
+    "selected": [
+     {
+      "order": [
+       2,
+       1,
+       2
+      ],
+      "coefficients": [
+       {
+        "name": "drift",
+        "estimate": -0.0009903,
+        "std_err": 0.003674,
+        "p_value": 0.788
+       },
+       {
+        "name": "ar1",
+        "estimate": 1.0209,
+        "std_err": 0.3578,
+        "p_value": 0.00433
+       },
+       {
+        "name": "ar2",
+        "estimate": -0.24953,
+        "std_err": 0.3335,
+        "p_value": 0.454
+       },
+       {
+        "name": "ma1",
+        "estimate": -1.0365,
+        "std_err": 0.3617,
+        "p_value": 0.00417
+       },
+       {
+        "name": "ma2",
+        "estimate": 0.12109,
+        "std_err": 0.366,
+        "p_value": 0.741
+       },
+       {
+        "name": "sigma2",
+        "estimate": 0.019356,
+        "std_err": 0.001871
+       }
+      ],
+      "ar_inverse_root_moduli": [
+       0.4055,
+       0.6154
+      ],
+      "ma_inverse_root_moduli": [
+       0.1342,
+       0.9023
+      ],
+      "residual_diagnostics": {
+       "ljung_box": [
+        {
+         "lag": 12,
+         "p_value": 0.783
+        },
+        {
+         "lag": 24,
+         "p_value": 0.809
+        }
+       ],
+       "arch_lm_p": 0.994,
+       "jarque_bera_p": "<1e-4",
+       "skewness": 1.71,
+       "kurtosis": 9.59,
+       "white_noise": true
+      },
+      "warnings": [
+       "drift is not significant (p = 0.788).",
+       "ar2 is not significant (p = 0.454).",
+       "ma2 is not significant (p = 0.741).",
+       "MA inverse root 0.902 is close to 1 and nearly cancels the differencing: the series is likely over-differenced (try d = 0 with an AR term)."
+      ],
+      "forecast": [
+       {
+        "date": "2026-05-01",
+        "mean": 3.3215,
+        "sd": 0.1391,
+        "lo80": 3.1432,
+        "hi80": 3.4998,
+        "lo95": 3.0488,
+        "hi95": 3.5942,
+        "level": {
+         "median": 27.702,
+         "mean": 27.972,
+         "lo80": 23.178,
+         "hi80": 33.109,
+         "lo95": 21.091,
+         "hi95": 36.387
+        }
+       },
+       {
+        "date": "2026-06-01",
+        "mean": 3.2599,
+        "sd": 0.1952,
+        "lo80": 3.0097,
+        "hi80": 3.5101,
+        "lo95": 2.8773,
+        "hi95": 3.6426,
+        "level": {
+         "median": 26.048,
+         "mean": 26.549,
+         "lo80": 20.282,
+         "hi80": 33.452,
+         "lo95": 17.766,
+         "hi95": 38.19
+        }
+       },
+       {
+        "date": "2026-07-01",
+        "mean": 3.2199,
+        "sd": 0.2275,
+        "lo80": 2.9283,
+        "hi80": 3.5114,
+        "lo95": 2.7739,
+        "hi95": 3.6658,
+        "level": {
+         "median": 25.024,
+         "mean": 25.681,
+         "lo80": 18.695,
+         "hi80": 33.496,
+         "lo95": 16.021,
+         "hi95": 39.087
+        }
+       },
+       {
+        "date": "2026-08-01",
+        "mean": 3.1941,
+        "sd": 0.2473,
+        "lo80": 2.8772,
+        "hi80": 3.511,
+        "lo95": 2.7094,
+        "hi95": 3.6788,
+        "level": {
+         "median": 24.388,
+         "mean": 25.145,
+         "lo80": 17.764,
+         "hi80": 33.482,
+         "lo95": 15.02,
+         "hi95": 39.597
+        }
+       },
+       {
+        "date": "2026-09-01",
+        "mean": 3.1775,
+        "sd": 0.2604,
+        "lo80": 2.8438,
+        "hi80": 3.5112,
+        "lo95": 2.6672,
+        "hi95": 3.6879,
+        "level": {
+         "median": 23.988,
+         "mean": 24.815,
+         "lo80": 17.182,
+         "hi80": 33.489,
+         "lo95": 14.4,
+         "hi95": 39.96
+        }
+       }
+      ]
+     }
+    ],
+    "guidance": [
+     "AICc ranks models only within the same d; differences under 2 are negligible, so prefer the simpler model among near-ties.",
+     "Ljung-Box is an adequacy check, not a selection criterion: several models usually pass, and adding terms until one passes overfits.",
+     "Residuals are non-normal (kurtosis 9.59): Gaussian intervals misstate tail risk; compare a Student-t model with ts_fit_garch / ts_backtest."
+    ]
+   },
+   "ms": 83
+  },
+  {
+   "title": "GARCH(1,1)-t on monthly log changes",
+   "tool": "ts_fit_garch",
+   "args": {
+    "series_id": "GVZCLS",
+    "frequency": "m",
+    "end": "2026-04-30",
+    "transform": "log_diff",
+    "mean": "constant"
+   },
+   "result": {
+    "series": "GVZCLS (m, avg)",
+    "transform": "log_diff",
+    "n": 214,
+    "range": "2008-07-01 to 2026-04-01",
+    "missing_dropped": 165,
+    "model": "Const-GARCH(1,1)-t",
+    "pre_test_arch_lm": {
+     "p_value": 0.994,
+     "conclusion": "No ARCH effects in the input: GARCH is unlikely to help."
+    },
+    "coefficients": [
+     {
+      "name": "mu",
+      "estimate": -0.017799,
+      "std_err": 0.00969,
+      "p_value": 0.0662
+     },
+     {
+      "name": "omega",
+      "estimate": 0.00070752,
+      "std_err": 0.0001403
+     },
+     {
+      "name": "alpha",
+      "estimate": 3.8535e-11,
+      "std_err": null
+     },
+     {
+      "name": "beta",
+      "estimate": 0.96075,
+      "std_err": null
+     },
+     {
+      "name": "nu",
+      "estimate": 4.5848,
+      "std_err": 1.265
+     }
+    ],
+    "volatility": {
+     "persistence": 0.9607,
+     "half_life_periods": 17.3,
+     "unconditional_sd": 0.13426,
+     "last_conditional_sd": 0.13426
+    },
+    "loglik": 129.019,
+    "aic": -248.038,
+    "bic": -231.208,
+    "standardized_residuals": {
+     "ljung_box_12_p": 0.368,
+     "ljung_box_squared_12_p": 0.989,
+     "arch_lm_12_p": 0.991
+    },
+    "garch_vs_constant_variance": {
+     "constant_variance_loglik": 128.177,
+     "garch_loglik": 129.019,
+     "likelihood_ratio": 1.6838,
+     "p_value_chi2_2": 0.431,
+     "delta_aic": 2.316,
+     "delta_bic": 9.048,
+     "conclusion": "GARCH does not earn its two extra parameters (BIC and the LR test favor constant variance). Use constant variance; keep the Student-t if tails are fat.",
+     "note": "alpha = 0 is on the boundary, so the chi2(2) LR p-value is conservative."
+    },
+    "warnings": [
+     "Standard errors for alpha and beta are not reported because alpha is on its lower bound; the others are conditional on them.",
+     "alpha is at its lower bound (~0): no detectable ARCH effect, so beta is not identified. GARCH is not warranted."
+    ],
+    "forecast": [
+     {
+      "date": "2026-05-01",
+      "mean": -0.017799,
+      "sd": 0.1343,
+      "lo80": -0.16864,
+      "hi80": 0.13304,
+      "lo95": -0.28417,
+      "hi95": 0.24857
+     },
+     {
+      "date": "2026-06-01",
+      "mean": -0.017799,
+      "sd": 0.1343,
+      "lo80": -0.16864,
+      "hi80": 0.13304,
+      "lo95": -0.28417,
+      "hi95": 0.24857
+     },
+     {
+      "date": "2026-07-01",
+      "mean": -0.017799,
+      "sd": 0.1343,
+      "lo80": -0.16864,
+      "hi80": 0.13304,
+      "lo95": -0.28417,
+      "hi95": 0.24857
+     },
+     {
+      "date": "2026-08-01",
+      "mean": -0.017799,
+      "sd": 0.1343,
+      "lo80": -0.16863,
+      "hi80": 0.13304,
+      "lo95": -0.28417,
+      "hi95": 0.24857
+     },
+     {
+      "date": "2026-09-01",
+      "mean": -0.017799,
+      "sd": 0.1343,
+      "lo80": -0.16863,
+      "hi80": 0.13304,
+      "lo95": -0.28416,
+      "hi95": 0.24857
+     },
+     {
+      "date": "2026-10-01",
+      "mean": -0.017799,
+      "sd": 0.1343,
+      "lo80": -0.16863,
+      "hi80": 0.13304,
+      "lo95": -0.28416,
+      "hi95": 0.24857
+     }
+    ],
+    "forecast_note": "Intervals use the fitted innovation distribution; for h > 1 with t errors they approximate the predictive as a scaled t."
+   },
+   "ms": 116
+  },
+  {
+   "title": "AR(1)-GARCH(1,1)-t on monthly log level",
+   "tool": "ts_fit_garch",
+   "args": {
+    "series_id": "GVZCLS",
+    "frequency": "m",
+    "end": "2026-04-30",
+    "transform": "log",
+    "mean": "ar",
+    "ar_lags": 1
+   },
+   "result": {
+    "series": "GVZCLS (m, avg)",
+    "transform": "log",
+    "n": 215,
+    "range": "2008-06-01 to 2026-04-01",
+    "missing_dropped": 165,
+    "model": "AR(1)-GARCH(1,1)-t",
+    "pre_test_arch_lm": {
+     "p_value": 0.999,
+     "conclusion": "No ARCH effects in the input: GARCH is unlikely to help."
+    },
+    "coefficients": [
+     {
+      "name": "mu",
+      "estimate": 0.30202,
+      "std_err": 0.07118,
+      "p_value": "<1e-4"
+     },
+     {
+      "name": "ar1",
+      "estimate": 0.88748,
+      "std_err": 0.02454,
+      "p_value": "<1e-4"
+     },
+     {
+      "name": "omega",
+      "estimate": 0.00096019,
+      "std_err": 0.0002133
+     },
+     {
+      "name": "alpha",
+      "estimate": 8.3195e-12,
+      "std_err": null
+     },
+     {
+      "name": "beta",
+      "estimate": 0.94639,
+      "std_err": null
+     },
+     {
+      "name": "nu",
+      "estimate": 3.8688,
+      "std_err": 0.9205
+     }
+    ],
+    "volatility": {
+     "persistence": 0.9464,
+     "half_life_periods": 12.6,
+     "unconditional_sd": 0.13383,
+     "last_conditional_sd": 0.13383
+    },
+    "loglik": 137.933,
+    "aic": -263.865,
+    "bic": -243.67,
+    "standardized_residuals": {
+     "ljung_box_12_p": 0.714,
+     "ljung_box_squared_12_p": 0.996,
+     "arch_lm_12_p": 0.998
+    },
+    "garch_vs_constant_variance": {
+     "constant_variance_loglik": 137.159,
+     "garch_loglik": 137.933,
+     "likelihood_ratio": 1.5471,
+     "p_value_chi2_2": 0.461,
+     "delta_aic": 2.453,
+     "delta_bic": 9.185,
+     "conclusion": "GARCH does not earn its two extra parameters (BIC and the LR test favor constant variance). Use constant variance; keep the Student-t if tails are fat.",
+     "note": "alpha = 0 is on the boundary, so the chi2(2) LR p-value is conservative."
+    },
+    "warnings": [
+     "Standard errors for alpha and beta are not reported because alpha is on its lower bound; the others are conditional on them.",
+     "alpha is at its lower bound (~0): no detectable ARCH effect, so beta is not identified. GARCH is not warranted."
+    ],
+    "forecast": [
+     {
+      "date": "2026-05-01",
+      "mean": 3.3317,
+      "sd": 0.1338,
+      "lo80": 3.1881,
+      "hi80": 3.4752,
+      "lo95": 3.0699,
+      "hi95": 3.5934,
+      "level": {
+       "median": 27.985,
+       "lo80": 24.242,
+       "hi80": 32.304,
+       "lo95": 21.54,
+       "hi95": 36.357
+      }
+     },
+     {
+      "date": "2026-06-01",
+      "mean": 3.2588,
+      "sd": 0.1789,
+      "lo80": 3.0669,
+      "hi80": 3.4507,
+      "lo95": 2.9089,
+      "hi95": 3.6087,
+      "level": {
+       "median": 26.018,
+       "lo80": 21.475,
+       "hi80": 31.523,
+       "lo95": 18.336,
+       "hi95": 36.92
+      }
+     },
+     {
+      "date": "2026-07-01",
+      "mean": 3.1941,
+      "sd": 0.2077,
+      "lo80": 2.9714,
+      "hi80": 3.4169,
+      "lo95": 2.788,
+      "hi95": 3.6003,
+      "level": {
+       "median": 24.389,
+       "lo80": 19.519,
+       "hi80": 30.475,
+       "lo95": 16.248,
+       "hi95": 36.609
+      }
+     },
+     {
+      "date": "2026-08-01",
+      "mean": 3.1368,
+      "sd": 0.2278,
+      "lo80": 2.8925,
+      "hi80": 3.3811,
+      "lo95": 2.6913,
+      "hi95": 3.5822,
+      "level": {
+       "median": 23.029,
+       "lo80": 18.038,
+       "hi80": 29.402,
+       "lo95": 14.751,
+       "hi95": 35.953
+      }
+     },
+     {
+      "date": "2026-09-01",
+      "mean": 3.0858,
+      "sd": 0.2424,
+      "lo80": 2.8258,
+      "hi80": 3.3459,
+      "lo95": 2.6117,
+      "hi95": 3.56,
+      "level": {
+       "median": 21.886,
+       "lo80": 16.875,
+       "hi80": 28.385,
+       "lo95": 13.623,
+       "hi95": 35.162
+      }
+     },
+     {
+      "date": "2026-10-01",
+      "mean": 3.0407,
+      "sd": 0.2534,
+      "lo80": 2.7689,
+      "hi80": 3.3124,
+      "lo95": 2.5451,
+      "hi95": 3.5362,
+      "level": {
+       "median": 20.919,
+       "lo80": 15.941,
+       "hi80": 27.452,
+       "lo95": 12.745,
+       "hi95": 34.336
+      }
+     }
+    ],
+    "forecast_note": "Intervals use the fitted innovation distribution; for h > 1 with t errors they approximate the predictive as a scaled t."
+   },
+   "ms": 148
+  },
+  {
+   "title": "GARCH(1,1)-t on DAILY log changes",
+   "tool": "ts_fit_garch",
+   "args": {
+    "series_id": "GVZCLS",
+    "end": "2026-04-30",
+    "transform": "log_diff",
+    "mean": "constant",
+    "forecast_horizon": 0
+   },
+   "result": {
+    "series": "GVZCLS",
+    "transform": "log_diff",
+    "n": 4507,
+    "range": "2008-06-04 to 2026-04-30",
+    "missing_dropped": 165,
+    "model": "Const-GARCH(1,1)-t",
+    "pre_test_arch_lm": {
+     "p_value": "<1e-4",
+     "conclusion": "ARCH effects present in the input."
+    },
+    "coefficients": [
+     {
+      "name": "mu",
+      "estimate": -0.0034273,
+      "std_err": 0.0006445,
+      "p_value": "<1e-4"
+     },
+     {
+      "name": "omega",
+      "estimate": 0.00029168,
+      "std_err": 0.00008129
+     },
+     {
+      "name": "alpha",
+      "estimate": 0.14335,
+      "std_err": 0.02637,
+      "p_value": "<1e-4"
+     },
+     {
+      "name": "beta",
+      "estimate": 0.76176,
+      "std_err": 0.04843,
+      "p_value": "<1e-4"
+     },
+     {
+      "name": "nu",
+      "estimate": 4.5878,
+      "std_err": 0.3312
+     }
+    ],
+    "volatility": {
+     "persistence": 0.9051,
+     "half_life_periods": 6.95,
+     "unconditional_sd": 0.055443,
+     "last_conditional_sd": 0.051553
+    },
+    "loglik": 7315.9,
+    "aic": -14621.8,
+    "bic": -14589.7,
+    "standardized_residuals": {
+     "ljung_box_12_p": "<1e-4",
+     "ljung_box_squared_12_p": 0.532,
+     "arch_lm_12_p": 0.563
+    },
+    "garch_vs_constant_variance": {
+     "constant_variance_loglik": 7160.8,
+     "garch_loglik": 7315.9,
+     "likelihood_ratio": 310.2,
+     "p_value_chi2_2": "<1e-4",
+     "delta_aic": -306.2,
+     "delta_bic": -293.4,
+     "conclusion": "GARCH improves the fit: volatility clustering matters for this series.",
+     "note": "alpha = 0 is on the boundary, so the chi2(2) LR p-value is conservative."
+    },
+    "warnings": []
+   },
+   "ms": 1479
+  },
+  {
+   "title": "Out-of-sample backtest vs random walk",
+   "tool": "ts_backtest",
+   "args": {
+    "series_id": "GVZCLS",
+    "frequency": "m",
+    "end": "2026-04-30",
+    "transform": "log",
+    "initial_window": 72,
+    "horizons": [
+     1,
+     3,
+     6
+    ],
+    "models": [
+     {
+      "kind": "random_walk"
+     },
+     {
+      "kind": "random_walk",
+      "drift": true
+     },
+     {
+      "kind": "arima",
+      "order": [
+       1,
+       1,
+       1
+      ]
+     },
+     {
+      "kind": "arima",
+      "order": [
+       2,
+       1,
+       2
+      ]
+     },
+     {
+      "kind": "arima",
+      "order": [
+       1,
+       0,
+       0
+      ]
+     },
+     {
+      "kind": "ar_garch",
+      "ar_lags": 1,
+      "garch": false,
+      "distribution": "t"
+     },
+     {
+      "kind": "ar_garch",
+      "ar_lags": 1,
+      "garch": true,
+      "distribution": "t"
+     }
+    ]
+   },
+   "result": {
+    "series": "GVZCLS (m, avg)",
+    "transform": "log",
+    "n": 215,
+    "range": "2008-06-01 to 2026-04-01",
+    "missing_dropped": 165,
+    "setup": {
+     "benchmark": "RW",
+     "window": "expanding",
+     "initial_window": 72,
+     "origins": 143,
+     "first_origin": "2014-06-01",
+     "last_origin": "2026-04-01",
+     "loss_scale": "log scale (errors are approximately relative errors)",
+     "elapsed_ms": 6044
+    },
+    "shock_concentration": {
+     "top5pct_share_of_benchmark_sq_error": 0.468,
+     "note": "Share of the benchmark's total squared one-step error coming from its largest 5% of errors. High values mean a few shocks dominate the loss, which makes accuracy differences hard to establish."
+    },
+    "results": [
+     {
+      "horizon": 1,
+      "models": [
+       {
+        "model": "RW",
+        "n": 143,
+        "rel_rmse": 1,
+        "rmse": 0.14278,
+        "mae": 0.10187,
+        "coverage80": 0.881,
+        "coverage95": 0.944,
+        "interval_score95": 0.8017,
+        "log_score": 0.5044,
+        "calm": {
+         "rel_rmse": 1
+        },
+        "turbulent": {
+         "rel_rmse": 1
+        }
+       },
+       {
+        "model": "RW+drift",
+        "n": 143,
+        "rel_rmse": 1.004,
+        "rmse": 0.14339,
+        "mae": 0.10181,
+        "dm_stat": 1.83,
+        "dm_p": 0.0687,
+        "coverage80": 0.881,
+        "coverage95": 0.944,
+        "interval_score95": 0.8085,
+        "log_score": 0.4995,
+        "calm": {
+         "rel_rmse": 1.007,
+         "dm_p": 0.135
+        },
+        "turbulent": {
+         "rel_rmse": 1.003,
+         "dm_p": 0.297
+        }
+       },
+       {
+        "model": "ARIMA(1,1,1)",
+        "n": 143,
+        "rel_rmse": 1.018,
+        "rmse": 0.14535,
+        "mae": 0.10492,
+        "dm_stat": 1.34,
+        "dm_p": 0.183,
+        "coverage80": 0.839,
+        "coverage95": 0.944,
+        "interval_score95": 0.8072,
+        "log_score": 0.4866,
+        "calm": {
+         "rel_rmse": 1.022,
+         "dm_p": 0.202
+        },
+        "turbulent": {
+         "rel_rmse": 1.015,
+         "dm_p": 0.43
+        }
+       },
+       {
+        "model": "ARIMA(2,1,2)",
+        "n": 143,
+        "rel_rmse": 1.026,
+        "rmse": 0.14645,
+        "mae": 0.10179,
+        "dm_stat": 0.989,
+        "dm_p": 0.324,
+        "coverage80": 0.839,
+        "coverage95": 0.937,
+        "interval_score95": 0.8639,
+        "log_score": 0.4604,
+        "calm": {
+         "rel_rmse": 1.019,
+         "dm_p": 0.519
+        },
+        "turbulent": {
+         "rel_rmse": 1.03,
+         "dm_p": 0.436
+        }
+       },
+       {
+        "model": "ARIMA(1,0,0)",
+        "n": 143,
+        "rel_rmse": 0.9826,
+        "rmse": 0.1403,
+        "mae": 0.10138,
+        "dm_stat": -1.19,
+        "dm_p": 0.235,
+        "coverage80": 0.867,
+        "coverage95": 0.937,
+        "interval_score95": 0.7666,
+        "log_score": 0.5219,
+        "calm": {
+         "rel_rmse": 0.9895,
+         "dm_p": 0.696
+        },
+        "turbulent": {
+         "rel_rmse": 0.9782,
+         "dm_p": 0.195
+        }
+       },
+       {
+        "model": "AR(1)-t",
+        "n": 143,
+        "rel_rmse": 0.9844,
+        "rmse": 0.14055,
+        "mae": 0.098331,
+        "dm_stat": -1.01,
+        "dm_p": 0.315,
+        "coverage80": 0.832,
+        "coverage95": 0.937,
+        "interval_score95": 0.8178,
+        "log_score": 0.6486,
+        "calm": {
+         "rel_rmse": 0.9864,
+         "dm_p": 0.492
+        },
+        "turbulent": {
+         "rel_rmse": 0.9831,
+         "dm_p": 0.448
+        }
+       },
+       {
+        "model": "AR(1)-GARCH(1,1)-t",
+        "n": 143,
+        "rel_rmse": 0.985,
+        "rmse": 0.14063,
+        "mae": 0.098212,
+        "dm_stat": -0.967,
+        "dm_p": 0.335,
+        "coverage80": 0.818,
+        "coverage95": 0.93,
+        "interval_score95": 0.8409,
+        "log_score": 0.6401,
+        "calm": {
+         "rel_rmse": 0.9876,
+         "dm_p": 0.529
+        },
+        "turbulent": {
+         "rel_rmse": 0.9833,
+         "dm_p": 0.456
+        }
+       }
+      ],
+      "summary": {
+       "lowest_rmse": "ARIMA(1,0,0)",
+       "best_log_score": "AR(1)-t",
+       "significantly_better_than_benchmark": [],
+       "significantly_worse_than_benchmark": [],
+       "verdict": "No model beats RW significantly at the 5% level for h=1."
+      }
+     },
+     {
+      "horizon": 3,
+      "models": [
+       {
+        "model": "RW",
+        "n": 141,
+        "rel_rmse": 1,
+        "rmse": 0.23388,
+        "mae": 0.1736,
+        "coverage80": 0.851,
+        "coverage95": 0.965,
+        "interval_score95": 1.307,
+        "log_score": 0.009881,
+        "calm": {
+         "rel_rmse": 1
+        },
+        "turbulent": {
+         "rel_rmse": 1
+        }
+       },
+       {
+        "model": "RW+drift",
+        "n": 141,
+        "rel_rmse": 1.014,
+        "rmse": 0.23705,
+        "mae": 0.17585,
+        "dm_stat": 1.7,
+        "dm_p": 0.091,
+        "coverage80": 0.858,
+        "coverage95": 0.95,
+        "interval_score95": 1.338,
+        "log_score": -0.004184,
+        "calm": {
+         "rel_rmse": 1.023,
+         "dm_p": 0.187
+        },
+        "turbulent": {
+         "rel_rmse": 1.009,
+         "dm_p": 0.306
+        }
+       },
+       {
+        "model": "ARIMA(1,1,1)",
+        "n": 141,
+        "rel_rmse": 1.026,
+        "rmse": 0.23994,
+        "mae": 0.17773,
+        "dm_stat": 1.99,
+        "dm_p": 0.0485,
+        "coverage80": 0.865,
+        "coverage95": 0.95,
+        "interval_score95": 1.357,
+        "log_score": -0.008007,
+        "calm": {
+         "rel_rmse": 1.025,
+         "dm_p": 0.112
+        },
+        "turbulent": {
+         "rel_rmse": 1.026,
+         "dm_p": 0.149
+        }
+       },
+       {
+        "model": "ARIMA(2,1,2)",
+        "n": 141,
+        "rel_rmse": 1.079,
+        "rmse": 0.25228,
+        "mae": 0.1856,
+        "dm_stat": 1.32,
+        "dm_p": 0.188,
+        "coverage80": 0.809,
+        "coverage95": 0.915,
+        "interval_score95": 1.532,
+        "log_score": -0.1201,
+        "calm": {
+         "rel_rmse": 1.007,
+         "dm_p": 0.931
+        },
+        "turbulent": {
+         "rel_rmse": 1.112,
+         "dm_p": 0.155
+        }
+       },
+       {
+        "model": "ARIMA(1,0,0)",
+        "n": 141,
+        "rel_rmse": 0.9574,
+        "rmse": 0.22391,
+        "mae": 0.17123,
+        "dm_stat": -0.967,
+        "dm_p": 0.335,
+        "coverage80": 0.794,
+        "coverage95": 0.957,
+        "interval_score95": 1.19,
+        "log_score": 0.05819,
+        "calm": {
+         "rel_rmse": 0.9835,
+         "dm_p": 0.844
+        },
+        "turbulent": {
+         "rel_rmse": 0.9443,
+         "dm_p": 0.285
+        }
+       },
+       {
+        "model": "AR(1)-t",
+        "n": 141,
+        "rel_rmse": 0.9653,
+        "rmse": 0.22577,
+        "mae": 0.16738,
+        "dm_stat": -0.835,
+        "dm_p": 0.405,
+        "coverage80": 0.766,
+        "coverage95": 0.936,
+        "interval_score95": 1.298,
+        "log_score": 0.1029,
+        "calm": {
+         "rel_rmse": 0.9542,
+         "dm_p": 0.374
+        },
+        "turbulent": {
+         "rel_rmse": 0.9707,
+         "dm_p": 0.613
+        }
+       },
+       {
+        "model": "AR(1)-GARCH(1,1)-t",
+        "n": 141,
+        "rel_rmse": 0.9667,
+        "rmse": 0.2261,
+        "mae": 0.16749,
+        "dm_stat": -0.809,
+        "dm_p": 0.42,
+        "coverage80": 0.78,
+        "coverage95": 0.929,
+        "interval_score95": 1.319,
+        "log_score": 0.1061,
+        "calm": {
+         "rel_rmse": 0.957,
+         "dm_p": 0.394
+        },
+        "turbulent": {
+         "rel_rmse": 0.9714,
+         "dm_p": 0.619
+        }
+       }
+      ],
+      "summary": {
+       "lowest_rmse": "ARIMA(1,0,0)",
+       "best_log_score": "AR(1)-GARCH(1,1)-t",
+       "significantly_better_than_benchmark": [],
+       "significantly_worse_than_benchmark": [
+        "ARIMA(1,1,1)"
+       ],
+       "verdict": "No model beats RW significantly at the 5% level for h=3."
+      }
+     },
+     {
+      "horizon": 6,
+      "models": [
+       {
+        "model": "RW",
+        "n": 138,
+        "rel_rmse": 1,
+        "rmse": 0.25056,
+        "mae": 0.18789,
+        "coverage80": 0.906,
+        "coverage95": 0.971,
+        "interval_score95": 1.415,
+        "log_score": -0.1223,
+        "calm": {
+         "rel_rmse": 1
+        },
+        "turbulent": {
+         "rel_rmse": 1
+        }
+       },
+       {
+        "model": "RW+drift",
+        "n": 138,
+        "rel_rmse": 1.03,
+        "rmse": 0.25818,
+        "mae": 0.19263,
+        "dm_stat": 1.75,
+        "dm_p": 0.0823,
+        "coverage80": 0.899,
+        "coverage95": 0.957,
+        "interval_score95": 1.446,
+        "log_score": -0.1402,
+        "calm": {
+         "rel_rmse": 1.061,
+         "dm_p": 0.0691
+        },
+        "turbulent": {
+         "rel_rmse": 1.016,
+         "dm_p": 0.393
+        }
+       },
+       {
+        "model": "ARIMA(1,1,1)",
+        "n": 138,
+        "rel_rmse": 1.042,
+        "rmse": 0.26116,
+        "mae": 0.19403,
+        "dm_stat": 1.84,
+        "dm_p": 0.0686,
+        "coverage80": 0.899,
+        "coverage95": 0.971,
+        "interval_score95": 1.47,
+        "log_score": -0.1601,
+        "calm": {
+         "rel_rmse": 1.068,
+         "dm_p": 0.0539
+        },
+        "turbulent": {
+         "rel_rmse": 1.03,
+         "dm_p": 0.292
+        }
+       },
+       {
+        "model": "ARIMA(2,1,2)",
+        "n": 138,
+        "rel_rmse": 1.245,
+        "rmse": 0.31188,
+        "mae": 0.24054,
+        "dm_stat": 1.77,
+        "dm_p": 0.0793,
+        "coverage80": 0.768,
+        "coverage95": 0.899,
+        "interval_score95": 1.974,
+        "log_score": -0.3881,
+        "calm": {
+         "rel_rmse": 1.141,
+         "dm_p": 0.358
+        },
+        "turbulent": {
+         "rel_rmse": 1.289,
+         "dm_p": 0.109
+        }
+       },
+       {
+        "model": "ARIMA(1,0,0)",
+        "n": 138,
+        "rel_rmse": 0.9709,
+        "rmse": 0.24326,
+        "mae": 0.19313,
+        "dm_stat": -0.337,
+        "dm_p": 0.737,
+        "coverage80": 0.855,
+        "coverage95": 0.964,
+        "interval_score95": 1.221,
+        "log_score": -0.02439,
+        "calm": {
+         "rel_rmse": 1.043,
+         "dm_p": 0.803
+        },
+        "turbulent": {
+         "rel_rmse": 0.936,
+         "dm_p": 0.444
+        }
+       },
+       {
+        "model": "AR(1)-t",
+        "n": 138,
+        "rel_rmse": 0.9842,
+        "rmse": 0.24661,
+        "mae": 0.18314,
+        "dm_stat": -0.234,
+        "dm_p": 0.815,
+        "coverage80": 0.797,
+        "coverage95": 0.949,
+        "interval_score95": 1.416,
+        "log_score": 0.01608,
+        "calm": {
+         "rel_rmse": 0.9531,
+         "dm_p": 0.65
+        },
+        "turbulent": {
+         "rel_rmse": 0.9981,
+         "dm_p": 0.983
+        }
+       },
+       {
+        "model": "AR(1)-GARCH(1,1)-t",
+        "n": 138,
+        "rel_rmse": 0.9891,
+        "rmse": 0.24782,
+        "mae": 0.18384,
+        "dm_stat": -0.164,
+        "dm_p": 0.87,
+        "coverage80": 0.797,
+        "coverage95": 0.949,
+        "interval_score95": 1.427,
+        "log_score": 0.01166,
+        "calm": {
+         "rel_rmse": 0.9593,
+         "dm_p": 0.684
+        },
+        "turbulent": {
+         "rel_rmse": 1.002,
+         "dm_p": 0.979
+        }
+       }
+      ],
+      "summary": {
+       "lowest_rmse": "ARIMA(1,0,0)",
+       "best_log_score": "AR(1)-t",
+       "significantly_better_than_benchmark": [],
+       "significantly_worse_than_benchmark": [],
+       "verdict": "No model beats RW significantly at the 5% level for h=6."
+      }
+     }
+    ],
+    "reading_guide": [
+     "rel_rmse < 1 means lower error than the benchmark; dm_p < 0.05 means the difference is statistically significant.",
+     "Nominal coverage is 0.80 / 0.95: higher means intervals are too wide, lower means too narrow.",
+     "log_score: higher is better; it rewards calibrated intervals and fat tails where they are needed.",
+     "calm / turbulent split origins by trailing 12-period volatility (above vs below the median)."
+    ]
+   },
+   "ms": 6052
+  },
+  {
+   "title": "Latest data: AR(1)-t forecast from the most recent complete month",
+   "tool": "ts_fit_garch",
+   "args": {
+    "series_id": "GVZCLS",
+    "frequency": "m",
+    "transform": "log",
+    "mean": "ar",
+    "ar_lags": 1,
+    "variance": "constant",
+    "distribution": "t",
+    "forecast_horizon": 6
+   },
+   "result": {
+    "series": "GVZCLS (m, avg)",
+    "transform": "log",
+    "n": 221,
+    "range": "2008-06-01 to 2026-10-01",
+    "missing_dropped": 169,
+    "incomplete_periods_dropped": [
+     "2026-11-01"
+    ],
+    "model": "AR(1)-t",
+    "pre_test_arch_lm": {
+     "p_value": 0.999,
+     "conclusion": "No ARCH effects in the input: GARCH is unlikely to help."
+    },
+    "coefficients": [
+     {
+      "name": "mu",
+      "estimate": 0.29477,
+      "std_err": 0.06733,
+      "p_value": "<1e-4"
+     },
+     {
+      "name": "ar1",
+      "estimate": 0.89019,
+      "std_err": 0.02301,
+      "p_value": "<1e-4"
+     },
+     {
+      "name": "sigma2",
+      "estimate": 0.019981,
+      "std_err": 0.00491
+     },
+     {
+      "name": "nu",
+      "estimate": 3.5703,
+      "std_err": 0.8769
+     }
+    ],
+    "loglik": 143.544,
+    "aic": -279.088,
+    "bic": -265.513,
+    "standardized_residuals": {
+     "ljung_box_12_p": 0.705,
+     "ljung_box_squared_12_p": 0.995,
+     "arch_lm_12_p": 0.998
+    },
+    "warnings": [],
+    "forecast": [
+     {
+      "date": "2026-11-01",
+      "mean": 3.0853,
+      "sd": 0.1414,
+      "lo80": 2.9382,
+      "hi80": 3.2325,
+      "lo95": 2.8122,
+      "hi95": 3.3584,
+      "level": {
+       "median": 21.875,
+       "lo80": 18.882,
+       "hi80": 25.342,
+       "lo95": 16.647,
+       "hi95": 28.745
+      }
+     },
+     {
+      "date": "2026-12-01",
+      "mean": 3.0413,
+      "sd": 0.1892,
+      "lo80": 2.8443,
+      "hi80": 3.2383,
+      "lo95": 2.6757,
+      "hi95": 3.407,
+      "level": {
+       "median": 20.933,
+       "lo80": 17.19,
+       "hi80": 25.49,
+       "lo95": 14.522,
+       "hi95": 30.173
+      }
+     },
+     {
+      "date": "2027-01-01",
+      "mean": 3.0021,
+      "sd": 0.2199,
+      "lo80": 2.7732,
+      "hi80": 3.231,
+      "lo95": 2.5772,
+      "hi95": 3.427,
+      "level": {
+       "median": 20.128,
+       "lo80": 16.01,
+       "hi80": 25.306,
+       "lo95": 13.16,
+       "hi95": 30.784
+      }
+     },
+     {
+      "date": "2027-02-01",
+      "mean": 2.9672,
+      "sd": 0.2415,
+      "lo80": 2.7159,
+      "hi80": 3.2186,
+      "lo95": 2.5007,
+      "hi95": 3.4338,
+      "level": {
+       "median": 19.438,
+       "lo80": 15.118,
+       "hi80": 24.992,
+       "lo95": 12.191,
+       "hi95": 30.993
+      }
+     },
+     {
+      "date": "2027-03-01",
+      "mean": 2.9362,
+      "sd": 0.2573,
+      "lo80": 2.6684,
+      "hi80": 3.204,
+      "lo95": 2.4391,
+      "hi95": 3.4332,
+      "level": {
+       "median": 18.843,
+       "lo80": 14.416,
+       "hi80": 24.63,
+       "lo95": 11.463,
+       "hi95": 30.976
+      }
+     },
+     {
+      "date": "2027-04-01",
+      "mean": 2.9085,
+      "sd": 0.2691,
+      "lo80": 2.6284,
+      "hi80": 3.1887,
+      "lo95": 2.3885,
+      "hi95": 3.4285,
+      "level": {
+       "median": 18.329,
+       "lo80": 13.851,
+       "hi80": 24.256,
+       "lo95": 10.898,
+       "hi95": 30.83
+      }
+     }
+    ],
+    "forecast_note": "Intervals use the fitted innovation distribution; for h > 1 with t errors they approximate the predictive as a scaled t."
+   },
+   "ms": 34
+  },
+  {
+   "title": "Realized values after the sample end",
+   "tool": "fred_get_observations",
+   "args": {
+    "series_id": "GVZCLS",
+    "frequency": "m",
+    "start": "2026-05-01",
+    "max_points": 12
+   },
+   "result": {
+    "series": "GVZCLS (m, avg)",
+    "transform": "none",
+    "n": 6,
+    "range": "2026-05-01 to 2026-10-01",
+    "missing_dropped": 4,
+    "incomplete_periods_dropped": [
+     "2026-11-01"
+    ],
+    "summary": {
+     "n": 6,
+     "mean": 25.4168,
+     "sd": 1.42623,
+     "min": 22.9841,
+     "p25": 25.2231,
+     "median": 25.4933,
+     "p75": 25.8955,
+     "max": 27.3676
+    },
+    "points_returned": 6,
+    "points": [
+     [
+      "2026-05-01",
+      25.9535
+     ],
+     [
+      "2026-06-01",
+      27.3676
+     ],
+     [
+      "2026-07-01",
+      25.2091
+     ],
+     [
+      "2026-08-01",
+      25.7214
+     ],
+     [
+      "2026-09-01",
+      25.2652
+     ],
+     [
+      "2026-10-01",
+      22.9841
+     ]
+    ]
+   },
+   "ms": 1
+  },
+  {
+   "title": "Last in-sample level",
+   "tool": "fred_get_observations",
+   "args": {
+    "series_id": "GVZCLS",
+    "frequency": "m",
+    "end": "2026-04-30",
+    "max_points": 1
+   },
+   "result": {
+    "series": "GVZCLS (m, avg)",
+    "transform": "none",
+    "n": 215,
+    "range": "2008-06-01 to 2026-04-01",
+    "missing_dropped": 165,
+    "summary": {
+     "n": 215,
+     "mean": 18.8289,
+     "sd": 6.73181,
+     "min": 9.39273,
+     "p25": 14.9036,
+     "median": 17.571,
+     "p75": 20.7741,
+     "max": 55.0674
+    },
+    "points_returned": 1,
+    "note": "Showing the last 1 of 215 points. Narrow start/end or raise max_points for more.",
+    "points": [
+     [
+      "2026-04-01",
+      30.3786
+     ]
+    ]
+   },
+   "ms": 7
+  }
+ ],
+ "realized_check": {
+  "actual": [
+   [
+    "2026-05-01",
+    25.9535
+   ],
+   [
+    "2026-06-01",
+    27.3676
+   ],
+   [
+    "2026-07-01",
+    25.2091
+   ],
+   [
+    "2026-08-01",
+    25.7214
+   ],
+   [
+    "2026-09-01",
+    25.2652
+   ]
+  ],
+  "models": [
+   {
+    "model": "RW (no change)",
+    "forecasts": [
+     30.3786,
+     30.3786,
+     30.3786,
+     30.3786,
+     30.3786
+    ],
+    "log_rmse": 0.16256612641955026
+   },
+   {
+    "model": "ARIMA(2,1,2) (course model)",
+    "forecasts": [
+     27.702,
+     26.048,
+     25.024,
+     24.388,
+     23.988
+    ],
+    "log_rmse": 0.049541755737943075
+   },
+   {
+    "model": "ARIMA(1,1,1)",
+    "forecasts": [
+     28.604,
+     27.182,
+     26.033,
+     25.097,
+     24.329
+    ],
+    "log_rmse": 0.050131563034569074
+   },
+   {
+    "model": "AR(1) on log level",
+    "forecasts": [
+     28.837,
+     27.524,
+     26.399,
+     25.431,
+     24.594
+    ],
+    "log_rmse": 0.05312766724334208
+   },
+   {
+    "model": "AR(1)-GARCH(1,1)-t",
+    "forecasts": [
+     27.985,
+     26.018,
+     24.389,
+     23.029,
+     21.886
+    ],
+    "log_rmse": 0.09183863545640965
+   }
+  ]
+ }
+}
