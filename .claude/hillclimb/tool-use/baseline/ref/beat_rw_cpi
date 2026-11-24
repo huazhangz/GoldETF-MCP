@@ -1,0 +1,19 @@
+**Somewhat, but only clearly at three months ahead.** One month ahead, simple models cut the error by about 12–13%, but that gain isn't statistically significant at the 5% level. Three months ahead, they cut it by about 28%, and that gain is significant.
+
+**How I tested it:** I took monthly log changes in CPIAUCSL from 1990 to October 2026 (440 months). Each model was re-fitted on all data up to each forecast date, giving 264 forecast dates from October 2004 onward. Each model was compared with the no-change forecast using root-mean-square error (RMSE) and Diebold–Mariano tests, which check whether the gap is significant.
+
+**Is there anything to predict?** Yes. Inflation this month is correlated with last month's (correlation 0.46), and that correlation is clearly not chance (Ljung–Box p<1e-4). Volatility also clusters (ARCH test p<1e-4), and the series has fat tails (kurtosis 12).
+
+| Model | 1 month: RMSE vs naive (p) | 3 months: RMSE vs naive (p) |
+|---|---|---|
+| ARMA(1,1) | 0.871 (0.051) | 0.724 (0.002) |
+| AR(2) | 0.874 (0.070) | 0.732 (0.002) |
+| AR(1) | 0.883 (0.080) | 0.722 (0.001) |
+| AR(1)-GARCH-t | 0.891 (0.13) | 0.721 (0.001) |
+| Historical mean | 1.000 (0.999) | 0.725 (0.002) |
+
+Below 1 means a smaller error than the naive forecast.
+
+- **One month:** the gain is close to significant but not there. About 45% of the naive forecast's squared error comes from its 5% largest misses, such as 2008 and the 2021–22 surge, which makes differences hard to prove.
+- **Three months:** the AR-type models barely beat the plain historical mean (0.722 vs 0.725). So the advantage comes mostly from inflation pulling back toward its average, not from information in recent months.
+- **Forecast ranges:** the AR(1)-GARCH-t model gives the best-calibrated forecast ranges (log score 4.60 vs 4.25 at one month), because it allows for volatility clustering and fat tails.

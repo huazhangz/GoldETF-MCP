@@ -1,0 +1,13 @@
+The VIX is mean-reverting, so you don't need to difference it. Model it in levels, preferably in logs.
+
+**How I tested it:** I ran two standard stationarity tests (ADF and KPSS) on VIXCLS monthly averages from January 1990 to October 2026 (442 months), on both the raw level and the log level. Then I fitted ARIMA models with and without differencing.
+
+- **Raw level:** ADF = −5.26 (p ≈ 0.000006), which rejects a unit root. KPSS = 0.19 (p > 0.10), which doesn't reject stationarity. Both tests say stationary.
+- **Log level:** ADF = −3.85 (p = 0.002), KPSS = 0.20 (p > 0.10). Also stationary.
+- **Fitted model:** an AR(1) on log VIX was the best of the undifferenced models. Its coefficient is 0.875 (SE 0.023), well below 1. That means shocks fade with a half-life of about 5.2 months, back toward a long-run level of about 18.4 (exp of the 2.91 mean). Its residuals pass the autocorrelation check (Ljung-Box p = 0.16 at 12 lags).
+- **Differenced model:** the best ARIMA(1,1,1) has an MA term of −0.90, close to −1. That's a classic sign of over-differencing.
+
+**Caveats:**
+- The model's errors have fat tails and skew (kurtosis about 10, skewness about 1.7). Normal-based forecast intervals will understate spike risk, so consider Student-t errors.
+- Persistence is high, so in short samples a unit root can be hard to rule out.
+- I haven't backtested this model against a random walk. Do that before claiming it forecasts better.

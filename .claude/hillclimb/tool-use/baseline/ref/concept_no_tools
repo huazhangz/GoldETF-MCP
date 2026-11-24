@@ -1,0 +1,7 @@
+ADF (Augmented Dickey-Fuller): the null hypothesis is that the series has a unit root, so it is non-stationary. Rejecting it is evidence for stationarity.
+
+KPSS (Kwiatkowski-Phillips-Schmidt-Shin): the null hypothesis is that the series is stationary, either around a constant level or around a trend. Rejecting it is evidence for a unit root.
+
+Because the two nulls point in opposite directions, the tests are often run together. If ADF rejects and KPSS does not, that points to stationarity. If KPSS rejects and ADF does not, that points to a unit root. If both reject or neither does, the result is conflicting or inconclusive.
+
+This comes from the standard definitions, so I didn't need any tools. The `ts_test_stationarity` tool's own description says the same thing: "ADF (H0: unit root) + KPSS (H0: stationary)."

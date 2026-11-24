@@ -86,6 +86,7 @@ const DENY_BEAT = [
 ];
 const AFFIRM_BEAT = [
   /(significantly|statistically significant(ly)?)[^.]{0,60}(better|beat|outperform|lower|improv)/i,
+  /(gain|improvement|reduction|difference|advantage|edge|outperformance)[^.]{0,30}\b(is|was|are|were)\s+(statistically\s+)?significant/i,
   /(better|beat|outperform|lower|improv)[^.]{0,60}(statistically )?significant(ly)? at/i,
   /^\W*yes\b/i,
 ];
@@ -102,8 +103,10 @@ function backtestConsistency(r: AgentRun, id: string): Check {
   const deny = any(r.answer, DENY_BEAT);
   const answer_ok = anySig ? affirm : deny && !/^\W*yes\b/i.test(r.answer);
   if (!answer_ok) notes.push(anySig ? "answer does not report the significant improvement" : "answer does not state that no model is significantly better");
-  const models = bt.results[0]?.models ?? [];
-  const vsRandomWalk = models.length >= 2 && bt.setup?.benchmark?.startsWith("RW");
+  // The benchmark is identified from the call, not its display label (agents often relabel models).
+  const call = last(bts)!;
+  const specs = Array.isArray(call.args.models) ? call.args.models : [];
+  const vsRandomWalk = specs.length >= 2 && specs[call.args.benchmark ?? 0]?.kind === "random_walk";
   if (!vsRandomWalk) notes.push("backtest does not compare against a random-walk benchmark");
   return { tools_ok: vsRandomWalk, answer_ok, notes };
 }
@@ -409,7 +412,7 @@ export const CASES: EvalCase[] = [
       const shuttled = r.calls.some((c) => Array.isArray(c.args.values) && c.args.values.length >= 50);
       const answer_ok =
         any(r.answer, [/^\W*yes\b/i, /significant(ly)?[^.]{0,30}autocorrelat/i, /(strong|strongly|positive|persistent)[^.]{0,30}autocorrelat/i, /are autocorrelated/i]) &&
-        !/\b(not|no) (significant(ly)? )?autocorrelat/i.test(r.answer);
+        !/\b(are|is) not (significantly |meaningfully )?autocorrelated|\bno (significant|meaningful|evidence of) autocorrelation/i.test(r.answer);
       return { tools_ok: byId.length > 0 && !shuttled && r.calls.length <= 3, answer_ok, notes: [`${r.calls.length} tool calls${shuttled ? ", copied values" : ""}`] };
     },
   },

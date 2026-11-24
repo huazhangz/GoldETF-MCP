@@ -1,0 +1,14 @@
+**Yes, daily VIX log changes show clear volatility clustering, and the fitted model puts persistence at about 0.88, which is moderate.**
+
+**How I tested it:** I used daily VIXCLS log changes from 2010-01-05 to 2026-10-30 (4,265 observations; 125 missing days dropped).
+- **ARCH-LM test (12 lags):** statistic 230.4, p < 0.0001. Squared changes are significantly autocorrelated at lags 1–5, 7 and 8, so big moves tend to follow big moves.
+- **Fat tails:** kurtosis is 9.7 (a normal distribution has 3) and skewness is +1.09. That's why I used Student-t errors.
+
+**Model: AR(1) mean with GARCH(1,1) variance and Student-t errors**
+- α = 0.193, β = 0.686 (both p < 0.0001); t degrees of freedom ν ≈ 4.3
+- **Persistence (α+β) = 0.879**, so a volatility shock loses half its effect in about **5.4 trading days**. That fades much faster than in equity returns, where persistence is typically around 0.98.
+- Typical long-run daily move (unconditional SD) is 0.082, about 8.2%; at the end of the sample it was 6.5%.
+- **Compared with a constant-variance model:** likelihood-ratio test 331 (p < 0.0001), AIC lower by 327.
+- **Leftover variance clustering:** none. Squared-residual Ljung-Box p = 0.79 and ARCH-LM p = 0.77.
+
+**Caveat:** the residuals still have some autocorrelation in the changes themselves (Ljung-Box at lag 12, p < 0.0001; the raw changes have significant autocorrelation at lags 3, 4 and 6). A richer AR mean would capture that, but it shouldn't change the variance results. I didn't backtest the model's forecasts.

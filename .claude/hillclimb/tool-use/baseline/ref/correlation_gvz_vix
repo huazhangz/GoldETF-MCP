@@ -1,0 +1,10 @@
+**Correlation:** Monthly changes in gold volatility (GVZ) and the VIX are strongly correlated, at **r = 0.60**. The 95% confidence interval is 0.49 to 0.69 after adjusting for autocorrelation, and p < 0.0001. Spearman's rank correlation is 0.52. In a regression, a 10% rise in the VIX goes with about a **4.5% rise in GVZ** in the same month (β = 0.45, HAC standard error 0.074). VIX changes explain about 36% of GVZ changes.
+
+**Lead/lag:** The two mostly move together in the same month, and neither reliably leads the other.
+- The cross-correlation peaks at lag 0 (0.60). The value at ±1 month is small and not significant.
+- There are small negative correlations when the VIX leads by 3 to 4 months (−0.15 and −0.23). This looks like the gold-volatility spike partly reversing after a VIX spike, not a usable signal. I tested 13 lags, so a couple of borderline hits could be chance.
+- Granger tests found no lead in either direction. At 3 lags: VIX→GVZ p = 0.22, GVZ→VIX p = 0.45. At 6 lags: VIX→GVZ p = 0.097, which is weak, and GVZ→VIX p = 0.86.
+
+**Method:** I averaged both FRED daily series by month and took log differences. That gave 201 months, from February 2010 to October 2026, and both series passed stationarity tests. I then ran a correlation test adjusted for autocorrelation, a cross-correlation over ±6 months, and Granger causality tests.
+
+**Bottom line:** The two measures respond to the same shocks at the same time. Neither one predicts the other in a reliable way.

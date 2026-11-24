@@ -1,0 +1,10 @@
+I'd use **ARIMA(1,0,0)**, an AR(1) with a constant fitted to log GVZ. It's the simplest model that fits, and it did best out of sample. But it doesn't significantly beat a random walk (no-change forecast).
+
+**How I got there** (monthly averages, June 2008 to April 2026, 215 months):
+
+- **Should the series be differenced?** The two standard tests disagree on log levels. One (ADF, p=0.012) says the series mean-reverts; the other (KPSS, p<0.01) says it doesn't. That pattern usually means a series that is very persistent but still mean-reverting. Monthly changes in log GVZ are clearly stable over time.
+- **Undifferenced models:** AR(1) has the lowest score on the fit criterion (AICc −228.5). The persistence coefficient is 0.895, which means shocks fade with a half-life of about 6 months, around a long-run level of about 18.5. The extra terms in AR(2) and ARMA(1,1) aren't statistically significant. The leftover errors look like random noise.
+- **Differenced models:** the best one, ARIMA(1,1,1), has an MA coefficient of −0.96. That almost cancels the differencing, which is a sign it shouldn't be differenced at all.
+- **Out-of-sample test** (129 monthly forecast starts, 2015–2026): AR(1)'s error is 0.98, 0.97 and 0.99 times the random walk's at 1, 3 and 6 months ahead. It also had the best forecast-distribution scores. None of these gains is statistically significant (p of 0.25 or more), and ARIMA(1,1,1) did worse than the random walk.
+
+**Caveats:** the errors are strongly right-skewed (kurtosis 8.7), so normal-based forecast intervals understate the risk of spikes. There's no sign of volatility clustering in the errors (ARCH test p=0.999), so a GARCH model isn't needed.

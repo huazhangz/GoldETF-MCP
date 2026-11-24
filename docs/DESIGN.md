@@ -133,7 +133,8 @@ models × 143 origins):
       for the analysis workflow
 - [x] Tool-use evals (`evals/`): 20 two-sided cases with deterministic graders, validated with oracle/null/naive
       scripted agents; variants for skill on/off, minimal descriptions, and guardrail text stripped
-- [ ] Run the eval on Claude (pilot, then 3 reps per variant) and publish the variant comparison
+- [x] First Claude run (Opus 5.5): baseline 22/22, skill 19/19 on its subset (evals/RESULTS.md)
+- [ ] Ablations v2/v3 and Sonnet/Haiku runs (the Opus run is at the eval's ceiling); harder cases
 - [x] Claude Code plugin + marketplace (`plugin/`, `.claude-plugin/marketplace.json`; validated with `claude plugin validate`)
 - [ ] Publish to npm (`npx fred-timeseries-mcp`) and the MCP Registry
 - [x] Correlation / lead-lag / Granger / HAC regression (`ts_compare_series`) and ALFRED vintages (`as_of`)

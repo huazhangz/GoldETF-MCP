@@ -1,0 +1,15 @@
+Yes. Monthly log changes in CPIAUCSL are clearly autocorrelated, mostly at lag 1.
+
+**What I did:** I ran ACF/PACF, Ljung-Box, ARCH-LM and Jarque-Bera tests on the monthly log change of CPIAUCSL from February 1990 to October 2026 (n = 440).
+
+**Results:**
+- **Lag-1 autocorrelation is 0.46.** That is about five times the ±0.093 95% band. A high-inflation month tends to be followed by another one.
+- **Smaller spikes** above the band show up at lags 4, 7, 10, 11, 15 and 16 (0.10–0.14). These are weak on their own, since about 5% of lags cross the band by chance.
+- **Partial autocorrelation** is significant at lags 1 (0.46), 2 (−0.16), 3, 10, 12 (−0.16) and 15. A low-order AR model is a reasonable start. The lag-12 value suggests a little seasonality is left even though the series is seasonally adjusted.
+- **Ljung-Box tests** reject "no autocorrelation" at every lag checked: Q(6) = 107, Q(12) = 133, Q(24) = 158, all p < 0.0001.
+
+**Also found:**
+- **Volatility clustering:** the ARCH-LM statistic is 81.3 (p < 0.0001), so the size of the changes also clusters.
+- **Fat tails:** kurtosis is 12.2 and skewness −0.88, so the changes are far from normal.
+
+The test dropped one missing month, probably October 2025, when CPI wasn't published during the government shutdown. One change around that gap may cover two months. This should barely affect the results.

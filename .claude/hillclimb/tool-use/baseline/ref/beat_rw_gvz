@@ -1,0 +1,12 @@
+**No.** No ARIMA-type model beats a random walk by a statistically significant margin, either one or three months ahead.
+
+**How I tested it:** I averaged daily GVZCLS (CBOE gold volatility index) into monthly values from June 2008 to October 2026 (221 months) and modelled the log. I fitted ARIMA models, then ran a rolling out-of-sample test: each model was refit on all data up to each month, from October 2015 to October 2026 (133 forecast origins), and its errors were compared with a no-change forecast using Diebold-Mariano tests.
+
+**Model fit:** The best model is AR(1) on the log level, with coefficient 0.89. That means the index tends to drift back toward its average (about 18.4) slowly. Its residuals pass the usual checks (Ljung-Box p=0.82, no ARCH effects), but they have very fat tails (kurtosis 8.8).
+
+**Out-of-sample results (RMSE relative to the random walk):**
+- **1 month ahead:** AR(1) has 0.981, a 2% gain, with p=0.20. AR(2) and ARMA(1,1) score about 0.99 (p≥0.6).
+- **3 months ahead:** AR(1) has 0.955, a 4.5% gain, with p=0.32. Most of the gain comes from turbulent periods (0.92, p=0.15).
+- **Differenced models** (ARIMA with d=1) do worse than the random walk. At 3 months, (0,1,1) and (1,1,0) are significantly worse (p≈0.03).
+
+A few volatility spikes cause about half of the random walk's squared error, which makes small gains hard to prove. AR(1) has a slight edge in accuracy and calibration, but it isn't significant.

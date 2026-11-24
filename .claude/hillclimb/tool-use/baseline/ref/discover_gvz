@@ -1,0 +1,6 @@
+The FRED series for the CBOE Gold ETF Volatility Index is **GVZCLS**.
+
+- **Native frequency:** Daily. It's reported in index units and isn't seasonally adjusted.
+- **Data start:** 3 June 2008. The latest observation is from 20 November 2026.
+
+I found this by searching FRED for "CBOE gold ETF volatility index." GVZCLS was the only result whose title matched exactly. The search also returned the similar CBOE oil index (OVXCLS), euro index (EVZCLS, discontinued) and VIX (VIXCLS), but none of those track gold. I didn't open the full series metadata, so these details come from the search results.

@@ -1,17 +1,58 @@
 {
   "flow": "tool-use",
   "metrics": [
-    { "id": "pass", "label": "pass", "kind": "binary" },
-    { "id": "tools_ok", "label": "right tools", "kind": "binary" },
-    { "id": "answer_ok", "label": "right answer", "kind": "binary" },
-    { "id": "no_shuttle", "label": "no data copy", "kind": "binary" }
+    {
+      "id": "pass",
+      "label": "pass",
+      "kind": "binary"
+    },
+    {
+      "id": "tools_ok",
+      "label": "right tools",
+      "kind": "binary"
+    },
+    {
+      "id": "answer_ok",
+      "label": "right answer",
+      "kind": "binary"
+    },
+    {
+      "id": "no_shuttle",
+      "label": "no data copy",
+      "kind": "binary"
+    }
   ],
   "perf_fields": [
-    { "id": "cost_usd", "label": "cost", "unit": "$" },
-    { "id": "tool_calls", "label": "tool calls" },
-    { "id": "latency_s", "label": "latency", "unit": "s" },
-    { "id": "in_tokens", "label": "in tok" },
-    { "id": "out_tokens", "label": "out tok" }
+    {
+      "id": "cost_usd",
+      "label": "cost",
+      "unit": "$"
+    },
+    {
+      "id": "tool_calls",
+      "label": "tool calls"
+    },
+    {
+      "id": "latency_s",
+      "label": "latency",
+      "unit": "s"
+    },
+    {
+      "id": "in_tokens",
+      "label": "in tok"
+    },
+    {
+      "id": "out_tokens",
+      "label": "out tok"
+    }
   ],
-  "harness_paths": ["evals/harness.ts", "evals/cases.ts", "evals/fixture.ts", "evals/reference.ts", "evals/fixtures/catalog.json", "plugin/skills/fred-timeseries/SKILL.md"]
+  "harness_paths": [
+    "evals/harness.ts",
+    "evals/cases.ts",
+    "evals/fixture.ts",
+    "evals/reference.ts",
+    "evals/fixtures/catalog.json",
+    "plugin/skills/fred-timeseries/SKILL.md"
+  ],
+  "harness_sha": "d3448b749bc2715e5135d02c06c83ed57e805d057bf0e17f7c75eac9ca0a8b54"
 }

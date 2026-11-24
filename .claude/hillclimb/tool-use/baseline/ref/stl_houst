@@ -1,0 +1,17 @@
+Yes. US housing starts (HOUSTNSA) have strong seasonality.
+
+**How I measured it:** I ran an STL decomposition on the log of monthly starts from January 1959 to October 2026 (814 months). The seasonal pattern was held fixed over the whole period, and the fit was made robust so extreme months count less.
+
+**How strong it is:**
+- **Seasonal strength is 0.77** on a 0 to 1 scale. Anything above 0.6 counts as strong.
+- **The gap between the peak and the trough is 0.42 in log terms.** That means starts in the best month are about **53% higher** than in the worst month, holding the trend constant.
+- The usual random month-to-month noise is about ±9%, so the seasonal swing is much bigger than the noise.
+- The long-run trend and business cycle are also strong (0.91 on the same scale).
+
+**Which months are highest** (approximate % difference from the trend level):
+- **Peak:** May (+18%), June (+18%), April (+14%) and July (+13%). August (+10%), October (+8%) and September (+6%) stay above average.
+- **Low:** February (−23%), January (−22%) and December (−21%). November (−9%) is also below average, and March is about average.
+
+**What this means in practice:** Building follows the weather, with spring and summer highs and winter lows. Any analysis of the unadjusted series needs to handle seasonality, for example by comparing each month with the same month a year earlier or using a seasonal model. Otherwise, use the seasonally adjusted series (HOUST).
+
+**One caveat:** I assumed the seasonal pattern stayed the same since 1959. It may have weakened somewhat in recent decades, but I didn't check that.

@@ -1,0 +1,12 @@
+I can't give you the intraday high from this data. FRED only publishes the VIX daily close (series VIXCLS, "Daily, Close"). It has no open, high or low values.
+
+What the data does show for November 20, 2026:
+- **The VIX closed at 35.89.** That was its highest close of the week, and the intraday high was at least that level.
+- **It jumped about 7.45 points (+26%) in one day**, from 28.44 on Nov 19.
+- **The week's closes were** 22.91 (Nov 16), 25.46 (Nov 17), 24.56 (Nov 18), 28.44 (Nov 19) and 35.89 (Nov 20). That's up about 57% from Monday.
+
+**How I got this:** I searched FRED for VIX series, checked the VIXCLS metadata (which confirms it's close-only) and pulled the daily values for Nov 16–20.
+
+**Where to find the intraday high:** Cboe's historical VIX data page (VIX_History.csv has daily high and low), or a market data source like Bloomberg, Refinitiv, Yahoo Finance or your broker.
+
+Also note that VIX data belongs to Cboe, so using it beyond personal use needs their permission.

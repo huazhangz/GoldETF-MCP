@@ -1,0 +1,16 @@
+**No. The 10-year Treasury yield is not stationary in levels. I'd take first differences (monthly changes in percentage points) before fitting an ARIMA model, which means setting d = 1.**
+
+I ran two standard stationarity tests on the monthly averages (778 months, Jan 1962 to Oct 2026). The ADF test checks for a unit root (a trend that never reverts), and the KPSS test checks whether the series is stationary.
+
+| Transform | ADF stat (p) | KPSS stat (p) | Verdict |
+|---|---|---|---|
+| Level | −1.29 (0.63) | 5.26 (<0.01) | Non-stationary |
+| Log level | −1.95 (0.31) | 5.94 (<0.01) | Non-stationary |
+| **First difference** | **−6.62 (6e-9)** | **0.14 (>0.10)** | **Stationary** |
+| Log difference | −14.17 (2e-26) | 0.09 (>0.10) | Stationary |
+
+In levels, ADF can't rule out a unit root and KPSS rejects stationarity. Both tests agree, so the yield behaves like a random walk. Logging alone doesn't fix this.
+
+Both differenced versions pass. I'd still use the plain first difference rather than the log difference. A yield is already a rate, so a change in percentage points is easy to interpret. Logs also exaggerate moves when yields are near zero, as in 2020 (around 0.6%), and they break down if yields go negative.
+
+So fit ARIMA(p,1,q) on the level, or ARMA on the differences. The next steps would be to pick p and q from the autocorrelation patterns, check for volatility clustering, and backtest against a random walk. Yields are notoriously hard to beat with a no-change forecast.

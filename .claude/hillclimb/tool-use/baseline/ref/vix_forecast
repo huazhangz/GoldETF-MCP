@@ -1,0 +1,16 @@
+**VIX 6-month forecast (monthly average, data through October 2026)**
+
+The VIX is expected to stay around **17–18**, drifting slowly toward its long-run average of about 18.4. The uncertainty is large and grows quickly with the horizon.
+
+| Month | Median | Mean | 95% PI |
+|---|---|---|---|
+| Nov 2026 | 17.1 | 17.3 | 12.6 – 23.2 |
+| Dec 2026 | 17.2 | 17.6 | 11.4 – 25.9 |
+| Jan 2027 | 17.4 | 17.9 | 10.8 – 27.9 |
+| Feb 2027 | 17.5 | 18.1 | 10.5 – 29.3 |
+| Mar 2027 | 17.6 | 18.3 | 10.2 – 30.4 |
+| Apr 2027 | 17.7 | 18.5 | 10.0 – 31.3 |
+
+**How I got this:** I averaged the daily VIX by month (442 months, 1990 to Oct 2026), took logs, and compared several standard forecasting models by fit. The best was a simple model where each month depends on the previous one (AR(1), persistence 0.875), and its leftover errors showed no remaining pattern. I then re-ran it month by month from 2004 to 2026, using only data available at each point. It beat a "no change" forecast at every horizon: errors were 3% lower at 1 month and 13% lower at 6 months, both statistically significant. Its 95% intervals contained the actual value about 93–94% of the time.
+
+**Caveat:** The model's errors are strongly skewed with fat tails, so spikes like 2008 or 2020 are underweighted. Treat the upper bounds as optimistic. A real volatility shock could push the VIX well above 31.

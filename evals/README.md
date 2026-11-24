@@ -1,5 +1,7 @@
 # Tool-use eval
 
+Latest results: [RESULTS.md](RESULTS.md). Claude Opus 5.5 passes 22/22, which is at the eval's ceiling.
+
 This eval asks whether an agent using this MCP server gets to the right answer for the right reasons. It
 checks that the agent calls the right tools, respects the guardrails, and reports numbers that match what the
 tools returned.

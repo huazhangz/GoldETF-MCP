@@ -1,0 +1,9 @@
+**My forecast for May 2020 is 18.1% (95% interval 17.3–18.9%). That's well off: the actual rate was 13.2%, far outside the interval.**
+
+**How I got it:** I fitted several ARIMA models by maximum likelihood to UNRATE from January 1948 to April 2020 (868 months, current revised data) and ranked them by AICc, a fit score that penalises extra terms.
+- **Model I used:** ARIMA(1,1,1), the best of the models fitted to monthly changes. Its terms are AR 0.84 and MA −0.54; the drift term isn't significant (p = 0.36). Its errors show no leftover pattern (Ljung-Box p = 0.97).
+- **Alternative:** AR(2) on the rate itself forecasts 18.4% (17.6–19.2%). But its largest root is 0.97, almost a unit root, which favours modelling changes instead.
+
+**Why it fails:** April's jump from 4.4% to 14.8% is an error 25 standard deviations in size. The model reads that jump as momentum and pushes it forward, adding about 3.3 points. The error distribution is extremely fat-tailed (kurtosis about 470, where a normal curve gives 3), and error size clusters over time (ARCH test p < 0.001). So the normal-curve interval of ±0.8 points is badly overconfident.
+
+**In practice:** simply carrying April forward (14.8%) would have missed by 1.6 points, against 4.9 for the ARIMA. A model fitted to past data can't anticipate a structural break like the COVID lockdowns. Here I'd use a no-change or judgment-based forecast with much wider uncertainty bands, or a model that allows fat-tailed errors.

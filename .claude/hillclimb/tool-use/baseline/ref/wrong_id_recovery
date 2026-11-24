@@ -1,0 +1,17 @@
+For monthly-average GVZ, the two tests disagree on the level, but both say monthly changes are stationary.
+
+**How I ran it:** FRED has no series called "GVZ". The match is **GVZCLS**, the CBOE Gold ETF Volatility Index, which is daily. I averaged it to months, giving 221 months from June 2008 to October 2026; the incomplete November 2026 was dropped. I tested with a constant only, choosing ADF lags by AIC and judging at the 5% level.
+
+| Version tested | ADF statistic (p) | KPSS statistic (p) | Verdict |
+|---|---|---|---|
+| Level | −4.13 (0.0009) | 0.869 (<0.01) | Tests disagree |
+| Log level | −3.53 (0.007) | 0.895 (<0.01) | Tests disagree |
+| Monthly change in the log | −10.14 (≈0) | 0.050 (>0.10) | Stationary |
+
+The ADF 5% critical value is −2.875.
+
+**What it means:**
+- **Level and log level:** ADF rejects a unit root, which points to mean reversion. KPSS also rejects stationarity. Both rejecting is typical of a persistent series that does revert to its mean, or of a series with structural breaks, such as the 2008 and 2020 spikes. So it's unclear whether the level is stationary.
+- **Monthly log changes:** both tests agree they are stationary.
+
+**Next step:** don't difference by default. Fit an AR model on log levels and an ARIMA model on differences (d=1), then compare their out-of-sample forecasts. Re-running the tests with a trend term is another option.

@@ -1,0 +1,18 @@
+**No, not at the 5% significance level.** The best ARIMA models beat the random walk by about 4% one month ahead, and that gap isn't statistically significant.
+
+**How I tested it**
+1. I averaged daily DGS10 into monthly values (Jan 1990 to Oct 2026, 442 months) and fitted ARIMA models. Within the differenced (d=1) models, which are the ones that match how yields actually move, ARIMA(0,1,1) fit best by AICc (MA coefficient 0.34, p<0.0001; residuals pass the white-noise check). The level (d=0) models had a near-unit root (AR coefficient 0.991).
+2. I then ran a rolling out-of-sample test with an expanding window: 266 one-month-ahead forecasts from Sep 2004 to Oct 2026. Six ARIMA models were compared against a no-change forecast using the Diebold–Mariano test.
+
+**One month ahead**
+| Model | Error vs random walk (RMSE ratio) | DM p-value |
+|---|---|---|
+| Random walk | 1.000 (RMSE 0.204 pp) | — |
+| ARIMA(0,1,1) | 0.959 | 0.065 |
+| ARIMA(1,1,1) | 0.959 | 0.061 |
+| ARIMA(1,1,0) | 0.965 | 0.062 |
+| AR(1) on levels | 1.003 | 0.44 |
+
+The models with a differencing term are close to significant at the 10% level but none pass at 5%. The small edge most likely comes from averaging daily yields into months, which builds a predictable piece into the monthly changes. It doesn't mean the models predict where rates are going. At 3 and 6 months ahead the advantage is gone: all models are within 1% of the random walk (all p>0.08).
+
+**Bottom line:** at best ARIMA gives a weak, borderline gain, and it doesn't significantly beat a random walk.

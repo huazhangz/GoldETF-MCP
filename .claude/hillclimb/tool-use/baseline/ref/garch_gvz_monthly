@@ -1,0 +1,12 @@
+**Short answer:** At a monthly frequency, GVZCLS shows no volatility clustering. The GARCH(1,1) persistence of 0.96 is a fitting artifact, not a real result.
+
+**How I got there:** I averaged the daily index into months (Jul 2008–Oct 2026, n=220), took monthly log changes, tested for ARCH effects, and then fit a constant-mean GARCH(1,1) with fat-tailed (Student-t) errors.
+
+**Key numbers:**
+- **Pre-test:** ARCH-LM(12) p = 0.993, and none of the squared-change autocorrelations were significant. There's no clustering to model.
+- **GARCH fit:** α ≈ 0 (it hit its lower bound), β = 0.963 and ν = 4.5. The tool reports persistence α+β = 0.963 with an 18-month half-life. But with α at zero, past shocks never feed into variance, so β can't be pinned down. The conditional SD stays flat at the unconditional 0.133 (about 13% a month).
+- **Against constant variance:** the likelihood-ratio test gives p = 0.39, and the two extra parameters make AIC worse by 2.1 and BIC by 8.9. Standardized residuals pass the checks (squared Ljung-Box p = 0.99).
+
+**What to use instead:** a constant-variance model with Student-t errors. The tails are heavy (kurtosis 9.0, skew 1.67), and that matters more than GARCH here. If you need clustering, model daily or weekly GVZ, where it's more likely to show up. Monthly averaging smooths it away.
+
+Note: GVZ is CBOE-copyrighted, so using it beyond personal research needs their permission.

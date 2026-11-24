@@ -94,7 +94,13 @@ Four variants separate what each layer contributes:
 - `v3`: guardrail text stripped from tool outputs
 
 The graders were checked with scripted agents. A correct agent passes 22/22, while an agent that answers
-"I don't know" and an agent that is plausible but wrong both pass 0/22. See [evals/README.md](https://github.com/huazhangz/GoldETF-MCP/blob/HEAD/evals/README.md).
+"I don't know" and an agent that is plausible but wrong both pass 0/22.
+
+**First run on Claude Opus 5.5:** the shipped server passes 22/22 for $3.73 in total. Opus declines GARCH for
+monthly data, calls a level correlation spurious, flags an outlier-dominated forecast, and reports a backtest
+result per horizon. The run is at the eval's ceiling, so the skill showed no measurable gain on Opus. See
+[evals/RESULTS.md](https://github.com/huazhangz/GoldETF-MCP/blob/HEAD/evals/RESULTS.md), including two grader
+fixes made after reading the transcripts. See [evals/README.md](https://github.com/huazhangz/GoldETF-MCP/blob/HEAD/evals/README.md).
 
 ## Development
 

@@ -1,0 +1,14 @@
+Here are the average VIX levels for each quarter of 2024:
+
+| Quarter | Average VIX |
+|---|---|
+| Q1 (Jan–Mar) | **13.71** |
+| Q2 (Apr–Jun) | **13.98** |
+| Q3 (Jul–Sep) | **17.07** |
+| Q4 (Oct–Dec) | **17.36** |
+
+The full-year average of these four quarters is about **15.5**.
+
+**Trend:** Volatility stayed low in the first half of the year, near 14. It rose by about 3 points in the second half. Q3 was pushed up by the volatility spike in early August 2024, and Q4 stayed high around the U.S. election and the December Fed meeting. Even so, every quarter was below the VIX's long-run average of about 19–20.
+
+**Method:** I took the daily closing VIX from FRED (series VIXCLS, CBOE Volatility Index) and averaged it by calendar quarter for January to December 2024. Days with no value, which are market holidays, were left out.

@@ -1,0 +1,13 @@
+**Year-over-year CPI inflation in September 2026 was about 3.7% (3.72%).**
+
+I pulled the CPIAUCSL index from FRED and compared September 2026 with September 2025:
+
+- September 2026: 336.298
+- September 2025: 324.245
+- Change: 336.298 ÷ 324.245 − 1 ≈ **3.72%**
+
+**Notes:**
+- CPIAUCSL is the seasonally adjusted CPI for all urban consumers. Year-over-year changes on this series can differ slightly from the headline not-seasonally-adjusted figure the BLS reports, usually by about 0.1 percentage point or less.
+- The October 2025 value is missing from FRED, but that doesn't affect this calculation.
+- These are the figures as currently published, which may have been revised since the first release.
+- For context, the index rose to 337.476 in October 2026.

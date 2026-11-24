@@ -1,0 +1,15 @@
+**Short answer: no, not in any meaningful way at the same point in time.** I compared monthly averages of DGS10 and UNRATE from January 1990 to October 2026 (441 months).
+
+**Levels:** The raw correlation is −0.12. Both series trend over long periods (they fail stationarity tests), which makes the effective sample only about 18 independent observations. Adjusted for that, p = 0.65, so there's no real relationship, and a correlation between trending levels is likely to be misleading anyway.
+
+**Monthly changes (the proper test):** Both change series pass stationarity tests.
+- The correlation is −0.07 (adjusted p = 0.14; 95% CI −0.17 to +0.02).
+- In a regression, the yield change explains about 0.5% of the variation in unemployment changes (slope −0.18, robust p = 0.17).
+- Leaving out 2020 onward (to drop the COVID shock) gives the same result: r = −0.08, p = 0.15.
+
+**One weak signal that the yield moves first:**
+- A rise in the 10-year yield is followed one month later by a slightly lower unemployment rate (r = −0.16). This is just outside the significance band.
+- A Granger test (does one series help predict the other?) finds that yield changes help predict unemployment changes (p = 0.014; p = 0.03 before 2020). Unemployment doesn't help predict yields (p = 0.98).
+- This is consistent with bond markets reacting to the growth outlook early. But it's statistical precedence, not causation, and it's economically small.
+
+**Bottom line:** There's essentially no contemporaneous correlation. The only link is a weak tendency for yield moves to precede unemployment moves.
