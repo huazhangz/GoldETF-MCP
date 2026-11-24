@@ -177,5 +177,26 @@ dist = {
     "t_cdf": [[x_, df, stats.t.cdf(x_, df)] for x_, df in [(-3.2, 3), (-1.0, 4.3), (0.4, 10), (2.1, 141), (5.0, 2.5)]],
     "t_q": [[p, df, stats.t.ppf(p, df)] for p, df in [(0.9, 4.3), (0.975, 3), (0.025, 7.5), (0.995, 30)]],
 }
-dump("misc_reference.json", {"stl": stl_out, "archlm": {"lm": lm[0], "p": lm[1]}, "jb": list(jb), "dist": dist})
+# Relationship tools: correlation, Granger causality, HAC regression
+import statsmodels.api as sm  # noqa: E402
+from statsmodels.tsa.stattools import grangercausalitytests  # noqa: E402
+
+rng = np.random.default_rng(99)
+n = 240
+xr = np.zeros(n)
+yr = np.zeros(n)
+for t in range(1, n):
+    xr[t] = 0.5 * xr[t - 1] + rng.normal()
+    yr[t] = 0.3 * yr[t - 1] + 0.4 * xr[t - 1] + 0.2 * xr[t] + rng.standard_t(5)
+yr[[50, 51]] += 6  # outliers
+gr = grangercausalitytests(np.column_stack([yr, xr]), maxlag=4)
+hac = sm.OLS(yr, sm.add_constant(xr)).fit(cov_type="HAC", cov_kwds={"maxlags": 4})
+rel = {
+    "x": xr.tolist(), "y": yr.tolist(),
+    "pearson": stats.pearsonr(xr, yr)[0], "pearson_p": stats.pearsonr(xr, yr)[1], "spearman": stats.spearmanr(xr, yr)[0],
+    "granger": {str(L): {"F": gr[L][0]["ssr_ftest"][0], "p": gr[L][0]["ssr_ftest"][1], "df2": gr[L][0]["ssr_ftest"][2]} for L in (1, 2, 4)},
+    "hac": {"alpha": hac.params[0], "beta": hac.params[1], "se_beta": hac.bse[1], "r2": hac.rsquared},
+    "f_sf": [[f, d1, d2, stats.f.sf(f, d1, d2)] for f, d1, d2 in [(0.5, 2, 30), (3.1, 4, 200), (12.0, 1, 50)]],
+}
+dump("misc_reference.json", {"stl": stl_out, "archlm": {"lm": lm[0], "p": lm[1]}, "jb": list(jb), "dist": dist, "relationship": rel})
 print("fixtures written to", OUT)

@@ -8,72 +8,73 @@ import { applyTransform, type Point, type Transform } from "../stats/transforms.
 /* Shared input fragments. Descriptions are written for the model.     */
 /* ------------------------------------------------------------------ */
 
-export const seriesId = z
-  .string()
-  .trim()
-  .min(1)
-  .max(64)
-  .transform((s) => s.toUpperCase())
-  .describe('FRED series ID, e.g. "GVZCLS" (gold ETF volatility), "DGS10", "CPIAUCSL". Use fred_search_series if unknown.');
+// Factories, not shared instances: reusing one zod instance twice in a tool makes zod-to-json-schema emit
+// "$ref" pointers, which some MCP clients do not resolve. Descriptions are terse because every tool
+// definition costs context in every client session.
+export const seriesId = () =>
+  z
+    .string()
+    .trim()
+    .min(1)
+    .max(64)
+    .transform((s) => s.toUpperCase())
+    .describe('FRED series ID, e.g. "CPIAUCSL" (find IDs with fred_search_series).');
 
-export const dateStr = z
-  .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD.")
-  .describe("Date in YYYY-MM-DD format.");
+export const dateStr = (what = "Date") => z.string().date("Use YYYY-MM-DD.").describe(what);
 
-export const frequency = z
-  .enum(["w", "m", "q", "sa", "a"])
-  .describe(
-    "Aggregate to a LOWER frequency before analysis: w=weekly (ending Friday), m=monthly, q=quarterly, sa=semiannual, a=annual. Omit to keep the native frequency.",
-  );
+export const frequency = () =>
+  z.enum(["w", "m", "q", "sa", "a"]).describe("Aggregate to a lower frequency first (w=weekly, m, q, sa, a). Omit for native.");
 
-export const aggregation = z
-  .enum(["avg", "sum", "eop"])
-  .describe("How to aggregate when `frequency` is set: avg (default), sum, or eop (end of period).");
+export const aggregation = () => z.enum(["avg", "sum", "eop"]).describe("With frequency: avg (default), sum, or eop (end of period).");
 
-export const transform = z
-  .enum(["none", "log", "diff", "log_diff", "seasonal_diff", "log_seasonal_diff", "log_diff_seasonal_diff"])
-  .describe(
-    "Transform applied before analysis. log_diff = first difference of the natural log (approx. % change); the seasonal_* variants difference at lag `seasonal_period`.",
-  );
+export const TRANSFORMS = ["none", "log", "diff", "log_diff", "seasonal_diff", "log_seasonal_diff", "log_diff_seasonal_diff"] as const;
+export const transform = () =>
+  z.enum(TRANSFORMS).describe("log_diff = change of log (approx. % change); seasonal_* difference at lag seasonal_period.");
 
-/** Fields shared by every tool that reads a series. Either `series_id` or `values` is required. */
-export const seriesSourceShape = {
-  series_id: seriesId.optional(),
+/**
+ * Fields shared by the analysis tools. Either `series_id` or `values` is required. Rarely needed options
+ * (aggregation method, partial periods, seasonal period) live only on fred_get_observations; analysis
+ * tools use averages, drop partial periods and infer the seasonal period from the frequency.
+ */
+export const seriesSourceShape = () => ({
+  series_id: seriesId().optional(),
   values: z
     .array(z.number().finite())
     .min(10)
     .max(20_000)
     .optional()
-    .describe("Inline numeric series (oldest first). Use instead of series_id for data not on FRED, e.g. model residuals."),
-  start: dateStr.optional(),
-  end: dateStr.optional(),
-  frequency: frequency.optional(),
-  aggregation: aggregation.optional(),
-  keep_incomplete_periods: z
-    .boolean()
-    .optional()
-    .describe(
-      "When aggregating, keep a partially observed first/last period (e.g. the current month). Default false: partial periods are dropped because their averages are not comparable.",
-    ),
-  transform: transform.optional(),
-  seasonal_period: z
-    .number()
-    .int()
-    .min(2)
-    .max(366)
-    .optional()
-    .describe("Season length for seasonal_diff (12 for monthly, 4 for quarterly). Default 12."),
-};
+    .describe("Inline series, oldest first, instead of series_id (e.g. model residuals)."),
+  start: dateStr("Start date").optional(),
+  end: dateStr("End date").optional(),
+  frequency: frequency().optional(),
+  as_of: dateStr("ALFRED vintage: data as published on this date, before revisions").optional(),
+  transform: transform().optional(),
+});
+
+/** Season length implied by the target frequency, or by the native spacing of the data. */
+export function inferSeasonalPeriod(freq: string | undefined, points: Point[]): number {
+  const byFreq: Record<string, number> = { w: 52, m: 12, q: 4, sa: 2, a: 1 };
+  if (freq) return byFreq[freq]!;
+  const day = 86_400_000;
+  const gaps = points.slice(1, 200).map((p, i) => (Date.parse(p.date) - Date.parse(points[i]!.date)) / day);
+  const g = gaps.filter(Number.isFinite).sort((a, b) => a - b)[Math.floor(gaps.length / 2)];
+  if (g === undefined) return 12;
+  if (g >= 6 && g <= 8) return 52;
+  if (g >= 80 && g <= 100) return 4;
+  if (g >= 170 && g <= 200) return 2;
+  if (g >= 350) return 1;
+  return 12;
+}
 
 export type SourceArgs = {
   series_id?: string;
   values?: number[];
   start?: string;
   end?: string;
-  frequency?: z.infer<typeof frequency>;
-  aggregation?: z.infer<typeof aggregation>;
+  frequency?: z.infer<ReturnType<typeof frequency>>;
+  aggregation?: z.infer<ReturnType<typeof aggregation>>;
   keep_incomplete_periods?: boolean;
+  as_of?: string;
   transform?: Transform;
   seasonal_period?: number;
 };
@@ -108,14 +109,14 @@ export async function loadSeries(
     raw = args.values.map((value, i) => ({ date: `t${i + 1}`, value }));
     label = "inline values";
   } else {
-    const obs = await client.getObservations(args.series_id!, { start: args.start, end: args.end });
+    const obs = await client.getObservations(args.series_id!, { start: args.start, end: args.end, asOf: args.as_of });
     raw = [];
     for (const o of obs) {
       if (o.value === null || Number.isNaN(o.value)) droppedMissing++;
       else raw.push({ date: o.date, value: o.value });
     }
     if (raw.length === 0) throw new ToolInputError(`No observations for ${args.series_id} in the requested date range.`);
-    label = args.series_id!;
+    label = args.series_id! + (args.as_of ? ` [vintage ${args.as_of}]` : "");
     if (args.frequency) {
       const agg = aggregatePoints(raw, args.frequency, args.aggregation ?? "avg", {
         dropIncomplete: !(args.keep_incomplete_periods ?? false),
@@ -126,7 +127,11 @@ export async function loadSeries(
     }
   }
   const t = transformOverride ?? args.transform ?? "none";
-  const points = applyTransform(raw, t, args.seasonal_period ?? 12);
+  const period = args.seasonal_period ?? inferSeasonalPeriod(args.frequency, raw);
+  if (t.includes("seasonal") && period < 2) {
+    throw new ToolInputError(`Seasonal transforms need a seasonal period of at least 2; ${args.frequency ?? "this"} data has none.`);
+  }
+  const points = applyTransform(raw, t, period);
   if (points.length < minPoints) {
     throw new ToolInputError(
       `Only ${points.length} usable observations after transform "${t}" (need ${minPoints}). Widen the date range or use a higher frequency.`,
@@ -145,6 +150,30 @@ export function dataNote(s: LoadedSeries) {
     ...(s.droppedMissing ? { missing_dropped: s.droppedMissing } : {}),
     ...(s.droppedIncomplete.length ? { incomplete_periods_dropped: s.droppedIncomplete } : {}),
   };
+}
+
+/** Combined ADF (H0 unit root) + KPSS (H0 stationary) verdict. */
+export function stationarityVerdict(adfP: number, kpssP: number, alpha: number): { conclusion: string; explanation: string } {
+  const adfRejects = adfP < alpha;
+  const kpssRejects = kpssP < alpha;
+  if (adfRejects && !kpssRejects) {
+    return { conclusion: "stationary", explanation: "ADF rejects a unit root and KPSS does not reject stationarity." };
+  }
+  if (!adfRejects && kpssRejects) {
+    return {
+      conclusion: "non_stationary",
+      explanation: 'ADF cannot reject a unit root and KPSS rejects stationarity. Difference the series (try transform "diff" or "log_diff").',
+    };
+  }
+  if (adfRejects && kpssRejects) {
+    return {
+      conclusion: "conflicting",
+      explanation:
+        "Both tests reject. Typical of persistent but mean-reverting series (near unit root / long memory) or structural breaks. " +
+        'Do not difference automatically: compare a stationary AR model on levels (d=0) with a d=1 model using ts_fit_arima and ts_backtest, or retry with regression "ct".',
+    };
+  }
+  return { conclusion: "inconclusive", explanation: "Neither test rejects; the sample may be too short for the tests to have power." };
 }
 
 /* ------------------------------------------------------------------ */

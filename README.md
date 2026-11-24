@@ -25,8 +25,10 @@ call a model better than a random walk when a Diebold-Mariano test says so.
 | Can a model beat a random walk for the 10-year yield or gold volatility (GVZ)? | **No**, not significantly |
 | Does monthly GVZ need GARCH? | **No** (ARCH-LM p = 0.99). Daily GVZ and VIX do (p < 1e-4) |
 | Are housing starts seasonal? | **Strongly** (F_S = 0.77). Gold volatility is not (F_S = 0.02) |
+| Do VIX changes lead gold volatility? | Correlated (r = 0.60), and VIX helps predict GVZ (Granger p = 0.04), not the reverse |
+| Are unemployment and the 10-year yield correlated? | The levels look correlated (naive p = 0.015), but the result is **spurious**: adjusted p = 0.65, and changes are not significantly related |
 
-Worked example: the **[GVZ case study](docs/case-study/README.md)** redoes a course forecasting project
+Worked example: the **[GVZ case study](https://github.com/huazhangz/GoldETF-MCP/blob/HEAD/docs/case-study/README.md)** redoes a course forecasting project
 entirely through these tools.
 
 ## Tools
@@ -40,11 +42,15 @@ entirely through these tools.
 | `ts_autocorrelation` | ACF/PACF with significant lags, Ljung-Box, ARCH-LM and squared ACF, Jarque-Bera |
 | `ts_fit_arima` | Exact-MLE ARIMA candidates ranked by AICc *within* each d. Warns on insignificant terms, cancelling roots, over-differencing and extreme recent shocks. Forecasts are back-transformed to levels |
 | `ts_fit_garch` | Zero/constant/AR mean, GARCH(1,1) or constant variance, normal or Student-t (arch conventions, robust SEs). Pre-tests for ARCH effects and compares against constant variance |
-| `ts_backtest` | Rolling-origin evaluation of up to 8 models on levels or growth rates. Reports relative RMSE, Diebold-Mariano (HLN) tests, 80/95% coverage, interval and log scores, and a calm/turbulent split |
+| `ts_backtest` | Rolling-origin evaluation of up to 8 models on levels or growth rates. Reports relative RMSE, Diebold-Mariano (HLN) tests, 80/95% coverage, interval and log scores, and a calm/turbulent split. Runtime is bounded automatically |
+| `ts_compare_series` | Correlation with an autocorrelation-adjusted p-value, lead/lag CCF, two-way Granger causality, and an OLS slope with HAC errors, plus a spurious-correlation warning for non-stationary levels |
+
+Every data tool accepts `as_of`, an ALFRED vintage date, to analyse data as published on that date, before
+revisions. All 10 tool definitions together cost about 8.6k tokens of context.
 
 All statistics are plain TypeScript, so installation only needs `node`. They are checked against statsmodels /
-arch / scipy: log-likelihoods match to 1e-7 or better at identical parameters, and STL, ADF, KPSS and the
-diagnostics match to 1e-8.
+arch / scipy: log-likelihoods match to 1e-7 or better at identical parameters, and STL, ADF, KPSS, Granger, HAC
+and the diagnostics match to 1e-8.
 
 ## Install
 
@@ -70,18 +76,15 @@ You need a free FRED API key: <https://fredaccount.stlouisfed.org/apikeys>.
 }
 ```
 
-The `npx` package name assumes the npm release. Until then, build from source with `npm install && npm run build`
-and point `command`/`args` at `node /path/to/dist/index.js`.
-
 `FRED_CSV_FALLBACK=1` lets you read observations without a key from FRED's public CSV downloads. It is meant for
 personal use only; search and metadata still need a key.
 
 ## Evaluation
 
 `evals/` measures whether an agent *uses* the tools well, not just whether the statistics are right. The suite
-has 20 cases, each graded on two deterministic checks: did the agent call the right tools, and is the answer
+has 22 cases, each graded on two deterministic checks: did the agent call the right tools, and is the answer
 correct and consistent with what the tools returned? Coverage is two-sided: decline GARCH vs fit GARCH, "nothing
-beats the random walk" vs "a model does", strong vs no seasonality, use tools vs answer without them.
+beats the random walk" vs "a model does", strong vs no seasonality, real vs spurious correlation, use tools vs answer without them.
 
 Four variants separate what each layer contributes:
 
@@ -90,13 +93,13 @@ Four variants separate what each layer contributes:
 - `v2`: minimal tool descriptions
 - `v3`: guardrail text stripped from tool outputs
 
-The graders were checked with scripted agents. A correct agent passes 20/20, while an agent that answers
-"I don't know" and an agent that is plausible but wrong both pass 0/20. See [evals/README.md](evals/README.md).
+The graders were checked with scripted agents. A correct agent passes 22/22, while an agent that answers
+"I don't know" and an agent that is plausible but wrong both pass 0/22. See [evals/README.md](https://github.com/huazhangz/GoldETF-MCP/blob/HEAD/evals/README.md).
 
 ## Development
 
 ```bash
-npm test          # 94 tests: statsmodels/arch/scipy parity + in-memory MCP end-to-end
+npm test          # 108 tests: statsmodels/arch/scipy parity, MCP end-to-end, release metadata
 npm run typecheck
 ```
 
@@ -114,14 +117,14 @@ The two Python scripts need `pip install statsmodels arch`.
 
 ```
 src/stats/   pure numerics: adf, kpss, autocorrelation, diagnostics, stl, arima (Kalman MLE),
-             volatility (AR-GARCH-t), backtest, evaluation, aggregate
+             volatility (AR-GARCH-t), backtest, evaluation, relationship, aggregate
 src/tools/   MCP tool definitions        src/fred/  FRED client (API + opt-in CSV)
 plugin/      Claude Code plugin: manifest + skills/fred-timeseries/SKILL.md
 evals/       tool-use eval: cases, graders, fixture, agent loop, runner
 test/        parity fixtures + end-to-end tests      docs/  DESIGN.md, case-study/
 ```
 
-Design notes (naming, descriptions, guardrails, error handling) are in [docs/DESIGN.md](docs/DESIGN.md).
+Design notes (naming, descriptions, guardrails, error handling) are in [docs/DESIGN.md](https://github.com/huazhangz/GoldETF-MCP/blob/HEAD/docs/DESIGN.md).
 
 ## License and data
 

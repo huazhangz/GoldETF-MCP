@@ -12,9 +12,7 @@ export function registerFredTools(server: McpServer, client: FredClient) {
     {
       title: "Search FRED series",
       description:
-        "Find FRED economic data series by keyword and get their IDs. Use this first whenever you do not already know " +
-        'the exact series ID (e.g. "gold volatility" -> GVZCLS, "10 year treasury" -> DGS10). ' +
-        "Results are ordered by popularity and include frequency, units and date coverage.",
+        "Find FRED series IDs by keyword (\"gold volatility\" -> GVZCLS, \"10 year treasury\" -> DGS10). Use first when the ID is unknown. Returns frequency, units and coverage.",
       inputSchema: {
         query: z.string().trim().min(2).max(200).describe('Keywords, e.g. "gold ETF volatility" or "unemployment rate".'),
         limit: z.number().int().min(1).max(50).default(10).describe("Max results (1-50). Default 10."),
@@ -46,10 +44,8 @@ export function registerFredTools(server: McpServer, client: FredClient) {
     {
       title: "Get FRED series metadata",
       description:
-        "Get metadata for one FRED series: title, units, native frequency, seasonal adjustment, date coverage, " +
-        "last update and the source's notes. Use it to check what a series measures and which frequencies it supports " +
-        "before fetching or analyzing it.",
-      inputSchema: { series_id: seriesId },
+        "Metadata for one series: units, native frequency, seasonal adjustment, coverage, notes, and whether it is third-party copyrighted.",
+      inputSchema: { series_id: seriesId() },
       annotations: READ_ONLY_REMOTE,
     },
     safe(async ({ series_id }) => {
@@ -77,18 +73,17 @@ export function registerFredTools(server: McpServer, client: FredClient) {
     {
       title: "Get FRED observations",
       description:
-        "Fetch observations for a FRED series, optionally aggregated to a lower frequency (e.g. daily -> monthly average; " +
-        "partially observed periods are dropped) and transformed (log, differences). Works without an API key. Always " +
-        "returns summary statistics; returns at most `max_points` of the most recent points to save context. To run " +
-        "statistics or models, call the ts_* tools with the same series_id instead of copying values out of this result.",
+        "Fetch a series, optionally aggregated to a lower frequency (partial periods dropped unless keep_incomplete_periods) and transformed. Returns summary stats and up to max_points recent points. For statistics, call ts_* tools with the series_id instead of copying values.",
       inputSchema: {
-        series_id: seriesId,
-        start: dateStr.optional(),
-        end: dateStr.optional(),
-        frequency: frequency.optional(),
-        aggregation: aggregation.optional(),
-        keep_incomplete_periods: seriesSourceShape.keep_incomplete_periods,
-        transform: transform.default("none"),
+        series_id: seriesId(),
+        start: dateStr().optional(),
+        end: dateStr().optional(),
+        frequency: frequency().optional(),
+        aggregation: aggregation().optional(),
+        keep_incomplete_periods: z.boolean().optional().describe("Keep a partial first/last period, e.g. month-to-date (default: dropped)."),
+        as_of: seriesSourceShape().as_of,
+        seasonal_period: z.number().int().min(2).max(366).optional().describe("Lag for seasonal_* transforms. Default from frequency (12 monthly)."),
+        transform: transform().default("none"),
         max_points: z
           .number()
           .int()

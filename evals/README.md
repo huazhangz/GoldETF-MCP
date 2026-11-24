@@ -6,7 +6,7 @@ tools returned.
 
 ## What is measured
 
-There are 20 cases in [CASES.md](CASES.md); the graders live in `cases.ts`. Each case is graded on two
+There are 22 cases in [CASES.md](CASES.md); the graders live in `cases.ts`. Each case is graded on two
 deterministic checks, and **pass** requires both:
 
 - `tools_ok`: did the agent call the right tools with sensible arguments? For example, `ts_backtest` before
@@ -28,7 +28,8 @@ The cases are two-sided on purpose:
 | `forecast_claims` | say nothing beats the random walk (GVZ, 10y yield) | say AR beats it for CPI inflation (DM p < 0.05) |
 | `seasonality` | find strong seasonality (housing starts, F_S 0.77) | find none (GVZ, F_S 0.02) |
 | `stationarity` | difference the 10y yield | not difference VIX (mean-reverting) |
-| `scope` | answer a concept question without tools | refuse to invent a correlation it cannot compute |
+| `relationship` | report the real VIX/GVZ link (r 0.60, VIX leads) | call the unemployment/yield level correlation spurious |
+| `scope` | answer a concept question without tools | not invent an intraday high (FRED has daily closes only) |
 
 The remaining groups are `outlier` (April 2020 unemployment), `data` (quarterly means, month-to-date partial
 period, YoY inflation), `discovery` (search, recovery from a wrong ID), `modeling` (over-differencing, faithful
@@ -59,9 +60,9 @@ The script runs three scripted agents (`reference.ts`) through the same harness 
 
 | Agent | Pass |
 | --- | --- |
-| oracle (correct behaviour, answers built from real tool output) | **20/20** |
-| null (no tools, "I don't know.") | **0/20** |
-| naive (plausible but wrong: fits GARCH anyway, claims a lower RMSE "beats" the RW, guesses numbers, picks ARIMA(2,1,2), invents a correlation, ...) | **0/20** |
+| oracle (correct behaviour, answers built from real tool output) | **22/22** |
+| null (no tools, "I don't know.") | **0/22** |
+| naive (plausible but wrong: fits GARCH anyway, claims a lower RMSE "beats" the RW, guesses numbers, picks ARIMA(2,1,2), trusts a spurious correlation, invents an intraday high, ...) | **0/22** |
 
 Every grader therefore accepts correct behaviour and rejects the specific mistake it targets. This does not yet
 show that the graders accept *every* valid phrasing a real model might use. Review the first pilot's failures
@@ -71,13 +72,39 @@ by hand before trusting the headline.
 
 The model calls use the Anthropic SDK and your API key; they cost money, so start with a pilot.
 
+Set up the key and check the request shape first. The API check is one request and costs under $0.05:
+
 ```bash
 export ANTHROPIC_API_KEY=...
-npx tsx evals/run-eval.mjs --flow .claude/hillclimb/tool-use --variant baseline --approve-harness   # once, after reviewing the harness
-npx tsx evals/run-eval.mjs --flow .claude/hillclimb/tool-use --variant baseline --reps 1             # pilot
-npx tsx evals/run-eval.mjs --flow .claude/hillclimb/tool-use --variant v1 --reps 3                   # etc.
+npx tsx evals/api-check.ts
+```
+
+Run a pilot on a few cases, then measure what it cost:
+
+```bash
+EVAL_CASES=garch_gvz_monthly,beat_rw_gvz,concept_no_tools \
+  npx tsx evals/run-eval.mjs --flow .claude/hillclimb/tool-use --variant baseline --approve-harness
+npx tsx evals/cost.ts .claude/hillclimb/tool-use
+```
+
+`--approve-harness` is needed once, after you have reviewed the harness, and again whenever a harness file
+changes.
+
+Then the full set (resume skips cases already done) and other variants:
+
+```bash
+npx tsx evals/run-eval.mjs --flow .claude/hillclimb/tool-use --variant baseline
+npx tsx evals/run-eval.mjs --flow .claude/hillclimb/tool-use --variant v1 --reps 3
+```
+
+Build the report:
+
+```bash
 node <claude-api skill>/shared/evals/report/build-report-lite.mjs .claude/hillclimb/tool-use/
 ```
+
+`npx tsx evals/tool-tokens.ts` prints each tool definition's context cost. If `ANTHROPIC_BASE_URL` points
+somewhere other than the Anthropic API in your shell, set `EVAL_ANTHROPIC_BASE_URL=https://api.anthropic.com`.
 
 - **Default model and settings:** `claude-opus-5-5` with adaptive thinking at `--effort medium`. Server-side
   refusal fallback is enabled; a response served by another model fails loudly as a served-model mismatch.
@@ -88,5 +115,5 @@ node <claude-api skill>/shared/evals/report/build-report-lite.mjs .claude/hillcl
 - **Data:** the FRED fixture serves real metadata from `fixtures/catalog.json` and real observations cached in
   `.cache/fred/` after the first download. That cache is gitignored, because third-party series such as CBOE's
   are not redistributed. No FRED key is needed.
-- **Resolution:** with 20 cases × 3 reps, the noise floor on a pass rate is about ±13 points. Differences
+- **Resolution:** with 22 cases × 3 reps, the noise floor on a pass rate is about ±12 points. Differences
   between variants smaller than that are not meaningful. Add reps or cases before acting on a small change.

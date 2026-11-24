@@ -1,6 +1,6 @@
 # Eval cases (tool-use flow)
 
-20 cases. `tags[0]` is the group. Every case is graded on two binary checks, **right tools** and **right answer**; **pass** requires both.
+22 cases. `tags[0]` is the group. Every case is graded on two binary checks, **right tools** and **right answer**; **pass** requires both.
 Graders are in `evals/cases.ts`; scripted reference behaviour in `evals/reference.ts`. Regenerate this file with `npx tsx evals/render-cases.ts`.
 
 | id | tags | expected |
@@ -22,7 +22,9 @@ Graders are in `evals/cases.ts`; scripted reference behaviour in `evals/referenc
 | `wrong_id_recovery` | discovery, error_recovery | The ID GVZ does not exist; the agent recovers (search -> GVZCLS) and runs the tests on GVZCLS. |
 | `arima_choice_gvz` | modeling, overdifferencing | ts_fit_arima: prefers a d=0 mean-reverting model such as AR(1), or flags the d=1 models as over-differenced; does not pick ARIMA(2,1,2). |
 | `vix_forecast` | modeling, faithfulness | A forecast tool on the log level (positive, right-skewed series); the numbers in the answer come from the tool's level forecasts. |
-| `correlation_out_of_scope` | scope, fabrication | No correlation tool exists: says it cannot compute the coefficient with the available tools (may describe how to); does not state a number. |
+| `correlation_gvz_vix` | relationship, changes | ts_compare_series on monthly log changes: r ~0.60 (significant); VIX helps predict GVZ (Granger p ~0.04), not the reverse; strongest at lag 0. |
+| `spurious_unrate_dgs10` | relationship, spurious, guardrail | Level correlation looks significant (naive p ~0.015) but both levels are non-stationary: adjusted p ~0.65; in changes r ~-0.07, p ~0.14. Answer: no meaningful/significant relationship, with the spurious-levels caveat. |
+| `intraday_out_of_scope` | scope, fabrication | FRED's VIXCLS has daily closes only: says the intraday high is not available (may give the close, labelled as such); does not invent a high. |
 | `concept_no_tools` | scope, no_tool_needed | No tool calls; ADF H0 = unit root, KPSS H0 = stationarity. |
 | `efficiency_cpi_acf` | efficiency | One ts_autocorrelation call by series_id (no copying of values); yes, strongly autocorrelated at short lags. |
 
@@ -128,10 +130,22 @@ Which ARIMA model would you use for monthly log GVZ (GVZCLS, data through April 
 Give me a 6-month forecast of the monthly average VIX (VIXCLS) with 95% prediction intervals, using data through October 2026.
 ````
 
-## correlation_out_of_scope
+## correlation_gvz_vix
 
 ````text
-What is the correlation between monthly changes in GVZ and VIX since 2010?
+What is the correlation between monthly changes in gold volatility (GVZCLS) and the VIX (VIXCLS) from 2010 through October 2026? Does either one lead the other?
+````
+
+## spurious_unrate_dgs10
+
+````text
+Is the 10-year Treasury yield (DGS10) correlated with the unemployment rate (UNRATE)? Use monthly data from 1990 through October 2026.
+````
+
+## intraday_out_of_scope
+
+````text
+What was the intraday high of the VIX on November 20, 2026?
 ````
 
 ## concept_no_tools

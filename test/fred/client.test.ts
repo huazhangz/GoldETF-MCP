@@ -22,7 +22,7 @@ describe("FredClient error mapping", () => {
     [err(500, "Internal Server Error"), "upstream"],
     [err(400, "Bad Request.  Variable observation_start is not a valid date."), "bad_request"],
   ])("maps FRED responses to error kinds (%#)", async (route, kind) => {
-    const c = new FredClient({ apiKey: "k", fetch: fakeFetch(route).fetch });
+    const c = new FredClient({ apiKey: "k", fetch: fakeFetch(route).fetch, retryDelayMs: 0 });
     expect(await kindOf(c.getSeries("X"))).toBe(kind);
   });
 
@@ -36,6 +36,7 @@ describe("FredClient error mapping", () => {
   it("wraps network failures", async () => {
     const c = new FredClient({
       apiKey: "k",
+      retryDelayMs: 0,
       fetch: (async () => {
         throw new TypeError("fetch failed");
       }) as typeof fetch,
@@ -62,5 +63,32 @@ describe("FredClient error mapping", () => {
       { date: "2020-01-01", value: 15.2 },
       { date: "2020-01-02", value: null },
     ]);
+  });
+
+  it("retries transient failures, then succeeds", async () => {
+    let n = 0;
+    const f = fakeFetch(() => (++n < 3 ? { status: 503, body: { error_message: "busy" } } : { body: { seriess: [{ id: "GVZCLS" }] } }));
+    const c = new FredClient({ apiKey: "k", fetch: f.fetch, retryDelayMs: 0 });
+    expect((await c.getSeries("GVZCLS")).id).toBe("GVZCLS");
+    expect(f.calls).toHaveLength(3);
+  });
+
+  it("does not retry client errors", async () => {
+    const f = fakeFetch(() => ({ status: 400, body: { error_message: "Bad Request.  The series does not exist." } }));
+    const c = new FredClient({ apiKey: "k", fetch: f.fetch, retryDelayMs: 0 });
+    expect(await kindOf(c.getSeries("NOPE"))).toBe("not_found");
+    expect(f.calls).toHaveLength(1);
+  });
+
+  it("caches responses with an LRU cap", async () => {
+    const f = fakeFetch((url) => ({ body: { seriess: [{ id: url.searchParams.get("series_id") }] } }));
+    const c = new FredClient({ apiKey: "k", fetch: f.fetch, cacheEntries: 2 });
+    await c.getSeries("A");
+    await c.getSeries("B");
+    await c.getSeries("A"); // hit; A becomes most recent
+    await c.getSeries("C"); // evicts B
+    await c.getSeries("A"); // still cached
+    await c.getSeries("B"); // refetched
+    expect(f.calls.map((u) => u.searchParams.get("series_id"))).toEqual(["A", "B", "C", "B"]);
   });
 });

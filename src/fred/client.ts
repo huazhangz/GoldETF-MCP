@@ -58,6 +58,11 @@ export interface FredClientOptions {
   fetch?: typeof fetch;
   timeoutMs?: number;
   cacheTtlMs?: number;
+  /** Max cached responses (least recently used are evicted). Default 64. */
+  cacheEntries?: number;
+  /** Retries on network errors, HTTP 429 and 5xx, with exponential backoff. Default 2. */
+  retries?: number;
+  retryDelayMs?: number;
 }
 
 export class FredClient {
@@ -68,6 +73,9 @@ export class FredClient {
   private readonly fetchImpl: typeof fetch;
   private readonly timeoutMs: number;
   private readonly cacheTtlMs: number;
+  private readonly cacheEntries: number;
+  private readonly retries: number;
+  private readonly retryDelayMs: number;
   private readonly cache = new Map<string, { at: number; data: unknown }>();
 
   constructor(opts: FredClientOptions) {
@@ -78,6 +86,24 @@ export class FredClient {
     this.fetchImpl = opts.fetch ?? fetch;
     this.timeoutMs = opts.timeoutMs ?? 15_000;
     this.cacheTtlMs = opts.cacheTtlMs ?? 10 * 60_000;
+    this.cacheEntries = opts.cacheEntries ?? 64;
+    this.retries = opts.retries ?? 2;
+    this.retryDelayMs = opts.retryDelayMs ?? 1000;
+  }
+
+  /** LRU cache: a hit moves the entry to the most-recent end; inserts evict the oldest beyond the cap. */
+  private cacheGet<T>(key: string): T | undefined {
+    const hit = this.cache.get(key);
+    if (!hit) return undefined;
+    this.cache.delete(key);
+    if (Date.now() - hit.at >= this.cacheTtlMs) return undefined;
+    this.cache.set(key, hit);
+    return hit.data as T;
+  }
+
+  private cacheSet(key: string, data: unknown) {
+    this.cache.set(key, { at: Date.now(), data });
+    while (this.cache.size > this.cacheEntries) this.cache.delete(this.cache.keys().next().value!);
   }
 
   async searchSeries(query: string, limit: number): Promise<{ count: number; series: FredSeries[] }> {
@@ -103,12 +129,17 @@ export class FredClient {
   }
 
   /** Native-frequency observations, oldest first. Aggregation is done locally by the caller. */
-  async getObservations(seriesId: string, opts: { start?: string; end?: string } = {}): Promise<Observation[]> {
+  async getObservations(seriesId: string, opts: { start?: string; end?: string; asOf?: string } = {}): Promise<Observation[]> {
     let obs: Observation[];
-    if (this.apiKey || !this.csvFallback) {
+    if (this.apiKey || !this.csvFallback || opts.asOf) {
       const params: Record<string, string> = { series_id: seriesId };
       if (opts.start) params.observation_start = opts.start;
       if (opts.end) params.observation_end = opts.end;
+      // ALFRED real-time data: the values as they were published on `asOf` (before later revisions).
+      if (opts.asOf) {
+        params.realtime_start = opts.asOf;
+        params.realtime_end = opts.asOf;
+      }
       const res = await this.get<{ observations: { date: string; value: string }[] }>("series/observations", params);
       obs = res.observations.map((o) => ({ date: o.date, value: o.value === "." ? null : Number(o.value) }));
     } else {
@@ -123,8 +154,8 @@ export class FredClient {
     const url = new URL(this.csvUrl);
     url.searchParams.set("id", seriesId);
     const key = url.toString();
-    const hit = this.cache.get(key);
-    if (hit && Date.now() - hit.at < this.cacheTtlMs) return hit.data as Observation[];
+    const hit = this.cacheGet<Observation[]>(key);
+    if (hit) return hit;
     const resp = await this.request(url);
     if (resp.status === 404) {
       throw new FredError("not_found", `Series "${seriesId}" does not exist.`, 404);
@@ -140,16 +171,28 @@ export class FredClient {
       const v = raw === undefined || raw === "" || raw === "." ? null : Number(raw);
       return { date: date!, value: v === null || Number.isNaN(v) ? null : v };
     });
-    this.cache.set(key, { at: Date.now(), data: obs });
+    this.cacheSet(key, obs);
     return obs;
   }
 
+  /** Fetch with retries on transient failures (network errors, 429, 5xx) and jittered exponential backoff. */
   private async request(url: URL): Promise<Response> {
-    try {
-      return await this.fetchImpl(url, { signal: AbortSignal.timeout(this.timeoutMs) });
-    } catch (err) {
-      const reason = err instanceof Error ? err.message : String(err);
-      throw new FredError("network", `Could not reach FRED (${reason}). Retry in a moment.`);
+    for (let attempt = 0; ; attempt++) {
+      let resp: Response | undefined;
+      let reason = "";
+      try {
+        resp = await this.fetchImpl(url, { signal: AbortSignal.timeout(this.timeoutMs) });
+        if (resp.status !== 429 && resp.status < 500) return resp;
+        reason = `HTTP ${resp.status}`;
+      } catch (err) {
+        reason = err instanceof Error ? err.message : String(err);
+      }
+      if (attempt >= this.retries) {
+        if (resp) return resp; // let the caller map the final 429/5xx to a typed error
+        throw new FredError("network", `Could not reach FRED (${reason}). Retry in a moment.`);
+      }
+      await resp?.body?.cancel().catch(() => {});
+      await new Promise((r) => setTimeout(r, this.retryDelayMs * 2 ** attempt * (0.5 + Math.random())));
     }
   }
 
@@ -164,8 +207,8 @@ export class FredClient {
     const url = new URL(`${this.baseUrl}/${path}`);
     for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
     const cacheKey = url.toString();
-    const hit = this.cache.get(cacheKey);
-    if (hit && Date.now() - hit.at < this.cacheTtlMs) return hit.data as T;
+    const hit = this.cacheGet<T>(cacheKey);
+    if (hit) return hit;
 
     url.searchParams.set("api_key", this.apiKey);
     url.searchParams.set("file_type", "json");
@@ -180,7 +223,7 @@ export class FredClient {
     }
 
     if (!resp.ok) throw toFredError(resp.status, body);
-    this.cache.set(cacheKey, { at: Date.now(), data: body });
+    this.cacheSet(cacheKey, body);
     return body as T;
   }
 }

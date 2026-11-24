@@ -63,13 +63,14 @@ describe("MCP server", () => {
       "fred_search_series",
       "ts_autocorrelation",
       "ts_backtest",
+      "ts_compare_series",
       "ts_decompose_stl",
       "ts_fit_arima",
       "ts_fit_garch",
       "ts_test_stationarity",
     ]);
     for (const t of tools) {
-      expect(t.description!.length).toBeGreaterThan(150);
+      expect(t.description!.length).toBeGreaterThan(100);
       expect(t.annotations?.readOnlyHint).toBe(true);
       // Every parameter carries a description the model can read.
       for (const [name, prop] of Object.entries((t.inputSchema.properties ?? {}) as Record<string, { description?: string }>)) {
@@ -178,6 +179,53 @@ describe("MCP server", () => {
     expect(body.shock_concentration.top5pct_share_of_benchmark_sq_error).toBeGreaterThan(0);
   });
 
+  it("compare series: spurious-correlation warning on levels, clean on changes, consistent alignment", async () => {
+    const { client } = await setup({ noKey: true });
+    // Two independent random walks: the textbook spurious regression.
+    let seed = 11;
+    const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647 - 0.5) * 2;
+    const walk = () => Array.from({ length: 300 }).reduce<number[]>((acc) => [...acc, (acc.at(-1) ?? 0) + rand()], []);
+    const levels = await call(client, "ts_compare_series", { values_x: walk(), values_y: walk() });
+    expect(levels.body.warnings.join(" ")).toMatch(/spurious/);
+    expect(levels.body.interpretation).toMatch(/caution/);
+    // x leads y by 2 periods: CCF peaks at lag +2 and x Granger-causes y, not the reverse.
+    const x = Array.from({ length: 300 }, rand);
+    const y = x.map((_, t) => (t >= 2 ? 0.8 * x[t - 2]! : 0) + 0.5 * rand());
+    const lead = await call(client, "ts_compare_series", { values_x: x, values_y: y, max_lag: 4, granger_lags: 2 });
+    expect(lead.body.lead_lag.strongest.lag).toBe(2);
+    expect(lead.body.granger.conclusion).toMatch(/^x helps predict y.*y does not help predict x/);
+    expect(lead.body.warnings).toEqual([]);
+    // A series against itself: correlation 1, Granger degrades gracefully instead of failing the call.
+    const self = await call(client, "ts_compare_series", { series_x: "GVZCLS", series_y: "GVZCLS", frequency: "m", transform: "log_diff", max_lag: 3 });
+    expect(self.body.correlation.pearson).toBeCloseTo(1, 6);
+    expect(self.body.granger.error).toMatch(/singular/);
+    // Exactly periodic inputs: the stationarity check is undetermined, the comparison still succeeds.
+    const sine = await call(client, "ts_compare_series", {
+      values_x: Array.from({ length: 60 }, (_, i) => Math.sin(i)),
+      values_y: Array.from({ length: 60 }, (_, i) => Math.sin(i + 1) + 0.1 * Math.cos(3 * i)),
+    });
+    expect(sine.r.isError).toBeFalsy();
+    expect(sine.body.stationarity.x).toBe("undetermined");
+  });
+
+  it("compare series rejects mixed inputs with an actionable message", async () => {
+    const { client } = await setup({ noKey: true });
+    const { r, text } = await call(client, "ts_compare_series", { series_x: "GVZCLS", values_y: Array.from({ length: 40 }, (_, i) => i) });
+    expect(r.isError).toBe(true);
+    expect(text).toMatch(/not a mix/);
+  });
+
+  it("as_of requests an ALFRED vintage (and needs a key)", async () => {
+    const { client, calls } = await setup();
+    await call(client, "fred_get_observations", { series_id: "GVZCLS", as_of: "2020-01-15", max_points: 0 });
+    expect(calls[0]!.searchParams.get("realtime_start")).toBe("2020-01-15");
+    expect(calls[0]!.searchParams.get("realtime_end")).toBe("2020-01-15");
+    const noKey = await setup({ noKey: true });
+    const { r, text } = await call(noKey.client, "fred_get_observations", { series_id: "GVZCLS", as_of: "2020-01-15" });
+    expect(r.isError).toBe(true);
+    expect(text).toMatch(/FRED_API_KEY/);
+  });
+
   describe("errors are returned as actionable isError results", () => {
     it("unknown series -> hint to search", async () => {
       const { client } = await setup();
@@ -237,5 +285,21 @@ describe("MCP server", () => {
       expect(r.isError).toBe(true);
       expect(text).toMatch(/YYYY-MM-DD/);
     });
+  });
+});
+
+describe("release metadata", () => {
+  it("package.json, server.json, plugin.json and the server agree on name and version", async () => {
+    const { readFileSync } = await import("node:fs");
+    const read = (p: string) => JSON.parse(readFileSync(new URL(`../../${p}`, import.meta.url), "utf8"));
+    const pkg = read("package.json");
+    const reg = read("server.json");
+    const plugin = read("plugin/.claude-plugin/plugin.json");
+    const { SERVER_VERSION } = await import("../../src/server.js");
+    expect(reg.name).toBe(pkg.mcpName);
+    expect(reg.description.length).toBeLessThanOrEqual(100);
+    for (const v of [reg.version, reg.packages[0].version, plugin.version, SERVER_VERSION]) expect(v).toBe(pkg.version);
+    expect(reg.packages[0].identifier).toBe(pkg.name);
+    expect(plugin.mcpServers["fred-timeseries"].args).toContain(`${pkg.name}@${pkg.version}`);
   });
 });

@@ -30,7 +30,7 @@
     "points_returned": 0,
     "points": []
    },
-   "ms": 544
+   "ms": 515
   },
   {
    "title": "STL decomposition of log(GVZ)",
@@ -154,7 +154,7 @@
      "seasonalDeg": 0
     }
    },
-   "ms": 60
+   "ms": 47
   },
   {
    "title": "Stationarity across transforms",
@@ -294,7 +294,7 @@
      }
     ]
    },
-   "ms": 82
+   "ms": 64
   },
   {
    "title": "Reproduce R tseries::adf.test settings (trend + fixed 5 lags) on log(GVZ)",
@@ -339,7 +339,7 @@
      }
     ]
    },
-   "ms": 7
+   "ms": 6
   },
   {
    "title": "Autocorrelation, ARCH effects and normality of monthly log changes",
@@ -607,7 +607,7 @@
     },
     "note": "With many lags, ~5% of ACF/PACF values exceed the band by chance alone; isolated small spikes are weak evidence."
    },
-   "ms": 28
+   "ms": 21
   },
   {
    "title": "ARIMA candidates on log(GVZ)",
@@ -1131,7 +1131,7 @@
      "Residuals are non-normal (kurtosis 8.67): Gaussian intervals misstate tail risk; compare a Student-t model with ts_fit_garch / ts_backtest."
     ]
    },
-   "ms": 196
+   "ms": 193
   },
   {
    "title": "The course project's model: ARIMA(2,1,2)",
@@ -1361,7 +1361,7 @@
      "Residuals are non-normal (kurtosis 9.59): Gaussian intervals misstate tail risk; compare a Student-t model with ts_fit_garch / ts_backtest."
     ]
    },
-   "ms": 83
+   "ms": 81
   },
   {
    "title": "GARCH(1,1)-t on monthly log changes",
@@ -1498,7 +1498,7 @@
     ],
     "forecast_note": "Intervals use the fitted innovation distribution; for h > 1 with t errors they approximate the predictive as a scaled t."
    },
-   "ms": 116
+   "ms": 115
   },
   {
    "title": "AR(1)-GARCH(1,1)-t on monthly log level",
@@ -1684,7 +1684,7 @@
     ],
     "forecast_note": "Intervals use the fitted innovation distribution; for h > 1 with t errors they approximate the predictive as a scaled t."
    },
-   "ms": 148
+   "ms": 152
   },
   {
    "title": "GARCH(1,1)-t on DAILY log changes",
@@ -1763,7 +1763,7 @@
     },
     "warnings": []
    },
-   "ms": 1479
+   "ms": 1343
   },
   {
    "title": "Out-of-sample backtest vs random walk",
@@ -1839,7 +1839,8 @@
      "first_origin": "2014-06-01",
      "last_origin": "2026-04-01",
      "loss_scale": "log scale (errors are approximately relative errors)",
-     "elapsed_ms": 6044
+     "step": 1,
+     "elapsed_ms": 6292
     },
     "shock_concentration": {
      "top5pct_share_of_benchmark_sq_error": 0.468,
@@ -2321,7 +2322,7 @@
      "calm / turbulent split origins by trailing 12-period volatility (above vs below the median)."
     ]
    },
-   "ms": 6052
+   "ms": 6298
   },
   {
    "title": "Latest data: AR(1)-t forecast from the most recent complete month",
@@ -2483,7 +2484,7 @@
     ],
     "forecast_note": "Intervals use the fitted innovation distribution; for h > 1 with t errors they approximate the predictive as a scaled t."
    },
-   "ms": 34
+   "ms": 35
   },
   {
    "title": "Realized values after the sample end",
@@ -2577,7 +2578,7 @@
      ]
     ]
    },
-   "ms": 7
+   "ms": 6
   }
  ],
  "realized_check": {

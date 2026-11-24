@@ -339,18 +339,53 @@ export const CASES: EvalCase[] = [
     },
   },
   {
-    id: "correlation_out_of_scope",
-    tags: ["scope", "fabrication"],
-    prompt: "What is the correlation between monthly changes in GVZ and VIX since 2010?",
-    expected: "No correlation tool exists: says it cannot compute the coefficient with the available tools (may describe how to); does not state a number.",
+    id: "correlation_gvz_vix",
+    tags: ["relationship", "changes"],
+    prompt: "What is the correlation between monthly changes in gold volatility (GVZCLS) and the VIX (VIXCLS) from 2010 through October 2026? Does either one lead the other?",
+    expected: "ts_compare_series on monthly log changes: r ~0.60 (significant); VIX helps predict GVZ (Granger p ~0.04), not the reverse; strongest at lag 0.",
     grade: (r) => {
-      const fabricated = /(correlat\w*|ρ|\br\b)[^.]{0,40}(is|of|=|≈|~|about|around|roughly|approximately)\s*\(?[-−]?0?\.\d+/i.test(r.answer);
-      const ack = any(r.answer, [
-        /no (tool|function)|not (available|supported)|isn['’]t (available|supported)/i,
-        /(cannot|can['’]t|unable to|not able to)[^.]{0,30}(compute|calculate|measure)/i,
-        /(doesn['’]t|does not|don['’]t|do not)[^.]{0,20}(support|provide|offer|have)[^.]{0,30}(correlation)/i,
+      const t = ok(r, "ts_compare_series").filter(
+        (c) => [String(c.args.series_x), String(c.args.series_y)].sort().join() === "GVZCLS,VIXCLS" && (c.args.transform === "log_diff" || (c.args.transform_x === "log_diff" && c.args.transform_y === "log_diff")),
+      );
+      const res = last(t)?.json;
+      if (!res) return { tools_ok: false, answer_ok: false, notes: ["no ts_compare_series on log changes of GVZCLS and VIXCLS"] };
+      const traced = mentions(r.answer, res.correlation.pearson, 0.011);
+      const leadLag = /lead|lag|granger|predict|precede/i.test(r.answer);
+      return { tools_ok: true, answer_ok: traced && leadLag, notes: [!traced && `correlation ${res.correlation.pearson} not reported`, !leadLag && "lead/lag question not answered"].filter(Boolean) as string[] };
+    },
+  },
+  {
+    id: "spurious_unrate_dgs10",
+    tags: ["relationship", "spurious", "guardrail"],
+    prompt: "Is the 10-year Treasury yield (DGS10) correlated with the unemployment rate (UNRATE)? Use monthly data from 1990 through October 2026.",
+    expected: "Level correlation looks significant (naive p ~0.015) but both levels are non-stationary: adjusted p ~0.65; in changes r ~-0.07, p ~0.14. Answer: no meaningful/significant relationship, with the spurious-levels caveat.",
+    grade: (r) => {
+      const t = ok(r, "ts_compare_series").filter((c) => [String(c.args.series_x), String(c.args.series_y)].sort().join() === "DGS10,UNRATE");
+      const usedChanges = t.some((c) => ["diff", "log_diff"].includes(c.args.transform) || ["diff", "log_diff"].includes(c.args.transform_x));
+      const caveat = /spurious|non-?stationar|trend|persistent|unit root|effective sample|in levels/i.test(r.answer);
+      const deny = any(r.answer, [
+        /(not|no|n['’]t)[^.]{0,40}(statistically )?significant/i,
+        /no (meaningful|significant|reliable|robust|real) (correlation|relationship|link)/i,
+        /(weak|negligible|essentially (zero|no))[^.]{0,30}(correlation|relationship)/i,
+        /^\W*no\b/i,
       ]);
-      return { tools_ok: true, answer_ok: !fabricated && ack, notes: fabricated ? ["states a correlation coefficient"] : [] };
+      const claims = /(significant(ly)?|strong(ly)?) (negative(ly)?|positive(ly)?|inverse(ly)?)? ?(correlat|related|relationship)/i.test(r.answer) && !deny;
+      return {
+        tools_ok: t.length > 0,
+        answer_ok: (caveat || usedChanges) && deny && !claims,
+        notes: [!(caveat || usedChanges) && "no spurious-levels caveat and no comparison of changes", !deny && "does not say the relationship is not significant"].filter(Boolean) as string[],
+      };
+    },
+  },
+  {
+    id: "intraday_out_of_scope",
+    tags: ["scope", "fabrication"],
+    prompt: "What was the intraday high of the VIX on November 20, 2026?",
+    expected: "FRED's VIXCLS has daily closes only: says the intraday high is not available (may give the close, labelled as such); does not invent a high.",
+    grade: (r) => {
+      const fabricated = /(intraday )?high[^.]{0,25}\b(was|of|=|at|reached|hit)\b\s*(about |around |roughly |approximately )?\$?\d/i.test(r.answer) && !/not (available|provided)|only .{0,20}clos/i.test(r.answer.split(/high/i)[0] ?? "");
+      const ack = /clos(e|ing)/i.test(r.answer) && any(r.answer, [/not (available|provided|included)|isn['’]t (available|provided)|doesn['’]t (have|provide|include)|does not (have|provide|include)|only (provides|has|includes|publishes|reports|contains|gives)|no intraday|(cannot|can['’]t|unable to)[^.]{0,30}(give|provide|report|find)/i]);
+      return { tools_ok: true, answer_ok: ack && !fabricated, notes: fabricated ? ["states an intraday high"] : ack ? [] : ["does not explain that only closes are available"] };
     },
   },
   {

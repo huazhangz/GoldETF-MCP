@@ -17,6 +17,7 @@ import { archLm, jarqueBera } from "../../src/stats/diagnostics.js";
 import { normalQuantile, studentTCdf, studentTQuantile } from "../../src/stats/distributions.js";
 import { dieboldMariano } from "../../src/stats/evaluation.js";
 import { backtest } from "../../src/stats/backtest.js";
+import { correlationPValue, crossCorrelation, effectiveSampleSize, fSf, grangerTest, hacRegression, pearson, spearman } from "../../src/stats/relationship.js";
 
 const maxAbsDiff = (a: number[], b: number[]) => Math.max(...a.map((v, i) => Math.abs(v - b[i]!)));
 
@@ -173,5 +174,38 @@ describe("forecast evaluation", () => {
     expect(ar.dm!.pValue).toBeLessThan(0.05);
     expect(r.models[0]!.byHorizon[1]!.n).toBe(200);
     expect(r.models[0]!.byHorizon[3]!.n).toBe(198);
+  });
+});
+
+describe("relationship tools vs scipy / statsmodels", () => {
+  const rel = misc.relationship;
+  it("Pearson, Spearman and p-value", () => {
+    expect(pearson(rel.x, rel.y)).toBeCloseTo(rel.pearson, 10);
+    expect(spearman(rel.x, rel.y)).toBeCloseTo(rel.spearman, 10);
+    expect(correlationPValue(rel.pearson, rel.x.length)).toBeCloseTo(rel.pearson_p, 8);
+  });
+  it("F survival function", () => {
+    for (const [f, d1, d2, p] of rel.f_sf) expect(fSf(f!, d1!, d2!)).toBeCloseTo(p!, 10);
+  });
+  it.each(["1", "2", "4"] as const)("Granger causality (ssr F-test), %s lags", (L) => {
+    const g = grangerTest(rel.y, rel.x, Number(L));
+    expect(g.F).toBeCloseTo(rel.granger[L].F, 8);
+    expect(g.pValue).toBeCloseTo(rel.granger[L].p, 10);
+    expect(g.df2).toBe(rel.granger[L].df2);
+  });
+  it("OLS with Newey-West HAC standard errors", () => {
+    const h = hacRegression(rel.y, rel.x, 4);
+    expect(h.alpha).toBeCloseTo(rel.hac.alpha, 10);
+    expect(h.beta).toBeCloseTo(rel.hac.beta, 10);
+    expect(h.seBeta).toBeCloseTo(rel.hac.se_beta, 8);
+    expect(h.r2).toBeCloseTo(rel.hac.r2, 10);
+  });
+  it("cross-correlation sign convention: positive lag means x leads y", () => {
+    const x = Array.from({ length: 200 }, (_, i) => Math.sin(i * 0.37) + Math.cos(i * 1.91));
+    const y = [0, 0, 0, ...x.slice(0, -3)]; // y_t = x_{t-3}
+    const ccf = crossCorrelation(x, y, 5);
+    const best = ccf.reduce((a, b) => (b.r > a.r ? b : a));
+    expect(best.lag).toBe(3);
+    expect(effectiveSampleSize(x, y)).toBeLessThan(200);
   });
 });

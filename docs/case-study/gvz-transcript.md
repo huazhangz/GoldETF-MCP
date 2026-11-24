@@ -170,7 +170,7 @@ vs constant variance: LR p = <1e-4, ΔBIC = -293.4. GARCH improves the fit: vola
 ts_backtest {"series_id":"GVZCLS","frequency":"m","end":"2026-04-30","transform":"log","initial_window":72,"horizons":[1,3,6],"models":[{"kind":"random_walk"},{"kind":"random_walk","drift":true},{"kind":"arima","order":[1,1,1]},{"kind":"arima","order":[2,1,2]},{"kind":"arima","order":[1,0,0]},{"kind":"ar_garch","ar_lags":1,"garch":false,"distribution":"t"},{"kind":"ar_garch","ar_lags":1,"garch":true,"distribution":"t"}]}
 ```
 
-143 origins (2014-06-01 to 2026-04-01), expanding window, 6044 ms. Top 5% of months = 0.468 of RW squared error.
+143 origins (2014-06-01 to 2026-04-01), expanding window, 6292 ms. Top 5% of months = 0.468 of RW squared error.
 
 **h = 1** — No model beats RW significantly at the 5% level for h=1.
 

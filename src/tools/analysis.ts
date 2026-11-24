@@ -7,35 +7,9 @@ import { acf, ljungBox, pacf } from "../stats/autocorrelation.js";
 import { archLm, jarqueBera } from "../stats/diagnostics.js";
 import { stl } from "../stats/stl.js";
 import type { Transform } from "../stats/transforms.js";
-import { dataNote, loadSeries, ok, round, roundP, safe, seriesSourceShape, ToolInputError, transform } from "./shared.js";
+import { dataNote, inferSeasonalPeriod, loadSeries, ok, round, roundP, safe, seriesSourceShape, stationarityVerdict, ToolInputError, transform } from "./shared.js";
 
 const ANALYSIS = { readOnlyHint: true, openWorldHint: true, idempotentHint: true } as const;
-
-function verdict(adfP: number, kpssP: number, alpha: number): { conclusion: string; explanation: string } {
-  const adfRejects = adfP < alpha;
-  const kpssRejects = kpssP < alpha;
-  if (adfRejects && !kpssRejects) {
-    return { conclusion: "stationary", explanation: "ADF rejects a unit root and KPSS does not reject stationarity." };
-  }
-  if (!adfRejects && kpssRejects) {
-    return {
-      conclusion: "non_stationary",
-      explanation: 'ADF cannot reject a unit root and KPSS rejects stationarity. Difference the series (try transform "diff" or "log_diff").',
-    };
-  }
-  if (adfRejects && kpssRejects) {
-    return {
-      conclusion: "conflicting",
-      explanation:
-        "Both tests reject. Typical of persistent but mean-reverting series (near unit root / long memory) or structural breaks. " +
-        'Do not difference automatically: compare a stationary AR model on levels (d=0) with a d=1 model using ts_fit_arima and ts_backtest, or retry with regression "ct".',
-    };
-  }
-  return {
-    conclusion: "inconclusive",
-    explanation: "Neither test rejects; the sample may be too short for the tests to have power.",
-  };
-}
 
 export function registerAnalysisTools(server: McpServer, client: FredClient) {
   server.registerTool(
@@ -43,14 +17,11 @@ export function registerAnalysisTools(server: McpServer, client: FredClient) {
     {
       title: "Test stationarity (ADF + KPSS)",
       description:
-        "Run the Augmented Dickey-Fuller test (H0: unit root) and the KPSS test (H0: stationary) together and return a " +
-        "combined verdict: stationary, non_stationary, conflicting, or inconclusive. Pass several `transforms` in one call " +
-        'to compare e.g. ["log", "log_diff"] and pick the transform for modeling. ' +
-        "Works on a FRED series_id (fetched for you) or inline `values`.",
+        "ADF (H0: unit root) + KPSS (H0: stationary) with a combined verdict: stationary, non_stationary, conflicting or inconclusive. Compare several transforms in one call, e.g. [\"log\", \"log_diff\"].",
       inputSchema: {
-        ...seriesSourceShape,
+        ...seriesSourceShape(),
         transforms: z
-          .array(transform)
+          .array(transform())
           .min(1)
           .max(6)
           .optional()
@@ -98,7 +69,7 @@ export function registerAnalysisTools(server: McpServer, client: FredClient) {
               : {}),
             lags: kpss.lags,
           },
-          ...verdict(adf.pValue, kpss.pValue, args.alpha),
+          ...stationarityVerdict(adf.pValue, kpss.pValue, args.alpha),
         });
       }
       const { transform: _t, n: _n, ...rest } = note!;
@@ -111,13 +82,9 @@ export function registerAnalysisTools(server: McpServer, client: FredClient) {
     {
       title: "Autocorrelation and ARCH diagnostics",
       description:
-        "Linear and nonlinear dependence diagnostics: ACF and PACF up to `max_lag` with lags outside ±1.96/√n flagged, " +
-        "the Ljung-Box white-noise test, Engle's ARCH-LM test and the ACF of squared values (volatility clustering), " +
-        "and Jarque-Bera normality. Use it to choose ARIMA orders (PACF cutoff suggests AR p, ACF cutoff suggests MA q), " +
-        "to decide whether a GARCH model is warranted (only if ARCH-LM rejects), or with inline `values` = model residuals " +
-        "and `fit_df` = p+q to check residuals. Usually run on a stationary transform such as log_diff.",
+        "ACF/PACF with significant lags (for ARIMA orders), Ljung-Box, ARCH-LM and squared-ACF (is GARCH warranted?), Jarque-Bera. Run on a stationary transform; for model residuals pass values and fit_df = p+q.",
       inputSchema: {
-        ...seriesSourceShape,
+        ...seriesSourceShape(),
         max_lag: z.number().int().min(1).max(200).default(24).describe("Largest lag to compute. Default 24."),
         fit_df: z
           .number()
@@ -193,13 +160,10 @@ export function registerAnalysisTools(server: McpServer, client: FredClient) {
     {
       title: "STL decomposition",
       description:
-        "Decompose a series into trend + seasonal + remainder with STL (as R's stl()) and report trend strength F_T and " +
-        "seasonal strength F_S (0-1; above ~0.6 is strong), the average seasonal effect for each position in the cycle, " +
-        "and the dates of the largest remainder shocks. Use it to decide whether seasonal terms (SARIMA, seasonal " +
-        "differencing) are worth modeling. Typically run on the log level, not on differences.",
+        "STL decomposition: trend strength F_T and seasonal strength F_S (0-1; >0.6 strong), seasonal effect by month, and dates of the largest shocks. Decides whether seasonality is worth modeling. Run on the (log) level.",
       inputSchema: {
-        ...seriesSourceShape,
-        period: z.number().int().min(2).max(366).default(12).describe("Cycle length: 12 for monthly, 4 for quarterly, 52 for weekly. Default 12."),
+        ...seriesSourceShape(),
+        period: z.number().int().min(2).max(366).optional().describe("Cycle length. Default from frequency: 12 monthly, 4 quarterly, 52 weekly."),
         seasonal_window: z
           .union([z.literal("periodic"), z.number().int().min(3).max(999)])
           .default("periodic")
@@ -212,14 +176,16 @@ export function registerAnalysisTools(server: McpServer, client: FredClient) {
     safe(async (args) => {
       const s = await loadSeries(client, args);
       const x = s.points.map((p) => p.value);
-      const r = stl(x, { period: args.period, seasonal: args.seasonal_window, robust: args.robust });
-      const effects = Array.from({ length: args.period }, (_, k) => {
-        const vals = r.seasonal.filter((_, i) => i % args.period === k);
+      const period = args.period ?? inferSeasonalPeriod(args.frequency, s.levels);
+      if (period < 2) throw new ToolInputError("Annual data have no seasonal cycle; use a higher frequency or set period.");
+      const r = stl(x, { period, seasonal: args.seasonal_window, robust: args.robust });
+      const effects = Array.from({ length: period }, (_, k) => {
+        const vals = r.seasonal.filter((_, i) => i % period === k);
         return vals.reduce((u, v) => u + v, 0) / vals.length;
       });
       // Label cycle positions by calendar month when the data are monthly and dated.
       const firstDate = s.points[0]!.date;
-      const monthly = args.period === 12 && /^\d{4}-\d{2}-01$/.test(firstDate);
+      const monthly = period === 12 && /^\d{4}-\d{2}-01$/.test(firstDate);
       const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
       const offset = monthly ? Number(firstDate.slice(5, 7)) - 1 : 0;
       const seasonal_effects = effects

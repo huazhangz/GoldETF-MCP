@@ -60,8 +60,12 @@ function stripDescriptions(schema: any): any {
   return schema;
 }
 
+/** EVAL_CASES=id1,id2 restricts a run to a subset (pilots); resume then fills in the rest on a later full run. */
 export function loadEvalCases() {
-  return CASES.map((c) => ({ id: c.id, prompt: c.prompt, tags: c.tags, meta: { expected: c.expected } }));
+  const only = process.env.EVAL_CASES?.split(",").map((s) => s.trim()).filter(Boolean);
+  const unknown = only?.filter((id) => !CASES.some((c) => c.id === id)) ?? [];
+  if (unknown.length) throw new Error(`EVAL_CASES names unknown case(s): ${unknown.join(", ")}`);
+  return CASES.filter((c) => !only || only.includes(c.id)).map((c) => ({ id: c.id, prompt: c.prompt, tags: c.tags, meta: { expected: c.expected } }));
 }
 
 type Turn = { role: "system" | "user" | "assistant" | "tool_call" | "tool_result"; content: string; name?: string };

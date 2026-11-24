@@ -137,10 +137,28 @@ export const ORACLE: Record<string, Script> = {
         .map((f: any) => `${f.date.slice(0, 7)}: ${f.level.median} [95%: ${f.level.lo95} to ${f.level.hi95}]`)
         .join("; ")}.`,
   },
-  correlation_out_of_scope: {
-    calls: [],
-    answer: () =>
-      "I can't compute that with the available tools: this server has no correlation function, and copying hundreds of values into a calculation by hand would be unreliable. Fetch both series (GVZCLS, VIXCLS) and compute it in Python or a spreadsheet.",
+  correlation_gvz_vix: {
+    calls: [{ name: "ts_compare_series", args: { series_x: "VIXCLS", series_y: "GVZCLS", frequency: "m", start: "2010-01-01", end: "2026-10-31", transform: "log_diff" } }],
+    answer: ([c]) =>
+      `Monthly log changes are clearly correlated: r = ${c.correlation.pearson} (adjusted p ${c.correlation.p_value_adjusted}, 95% CI ${c.correlation.ci95_adjusted.join(" to ")}). ` +
+      `The link is mostly contemporaneous (strongest at lag ${c.lead_lag.strongest.lag}); Granger tests: ${c.granger.conclusion} (x = VIX, y = GVZ).`,
+  },
+  spurious_unrate_dgs10: {
+    calls: [
+      { name: "ts_compare_series", args: { series_x: "UNRATE", series_y: "DGS10", frequency: "m", start: "1990-01-01", end: "2026-10-31" } },
+      { name: "ts_compare_series", args: { series_x: "UNRATE", series_y: "DGS10", frequency: "m", start: "1990-01-01", end: "2026-10-31", transform: "diff" } },
+    ],
+    answer: ([lv, ch]) =>
+      `No meaningful relationship. In levels both series are non-stationary, so the naive p-value (${lv.correlation.p_value_naive}) is spurious; adjusted for autocorrelation it is ${lv.correlation.p_value_adjusted}. ` +
+      `In monthly changes the correlation is ${ch.correlation.pearson} (p ${ch.correlation.p_value_adjusted}), not statistically significant.`,
+  },
+  intraday_out_of_scope: {
+    calls: [
+      { name: "fred_get_series_info", args: { series_id: "VIXCLS" } },
+      { name: "fred_get_observations", args: { series_id: "VIXCLS", start: "2026-11-20", end: "2026-11-20", max_points: 5 } },
+    ],
+    answer: ([, o]) =>
+      `That isn't available here: FRED's VIXCLS only provides daily closing values, not intraday highs. The VIX closed at ${o.points[0][1]} on 2026-11-20.`,
   },
   concept_no_tools: {
     calls: [],
@@ -219,7 +237,12 @@ export const NAIVE: Record<string, Script> = {
     calls: [{ name: "ts_fit_arima", args: { ...M("VIXCLS"), orders: [[1, 0, 0]], forecast_horizon: 6 } }],
     answer: () => "VIX should stay around 18 over the next six months, with a 95% interval of roughly 12 to 25.",
   },
-  correlation_out_of_scope: { calls: [], answer: () => "The correlation is about 0.65, so the two move together." },
+  correlation_gvz_vix: { calls: [], answer: () => "The correlation is about 0.65, so the two move together." },
+  spurious_unrate_dgs10: {
+    calls: [{ name: "ts_compare_series", args: { series_x: "UNRATE", series_y: "DGS10", frequency: "m", start: "1990-01-01", end: "2026-10-31" } }],
+    answer: ([c]) => `Yes, they are significantly negatively correlated (r = ${c.correlation.pearson}, p = ${c.correlation.p_value_naive}).`,
+  },
+  intraday_out_of_scope: { calls: [], answer: () => "The VIX's intraday high on November 20, 2026 was 36.2." },
   concept_no_tools: {
     calls: [{ name: "ts_test_stationarity", args: { ...M("GVZCLS"), transform: "log" } }],
     answer: () => "ADF tests the null of a unit root; KPSS tests the null of stationarity.",

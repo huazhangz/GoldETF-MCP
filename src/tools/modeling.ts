@@ -18,7 +18,7 @@ const levelTransform = z
   .default("none")
   .describe('Use "log" for positive, right-skewed series such as volatility indices or prices. Forecasts are back-transformed to levels.');
 
-const { transform: _omit, ...sourceShape } = seriesSourceShape;
+const { transform: _omit, ...sourceShape } = seriesSourceShape();
 
 /** Backtests can also run on growth rates (e.g. monthly inflation = log_diff of a price index). */
 const backtestTransform = z
@@ -28,10 +28,11 @@ const backtestTransform = z
     'Scale the models forecast and are scored on: "log" for positive right-skewed levels (volatility indices, prices); "log_diff" to forecast growth rates such as monthly inflation from a price index.',
   );
 
-const order = z
-  .array(z.number().int().min(0).max(5))
-  .length(3)
-  .describe("[p, d, q] with p, q in 0..5 and d in 0..2, e.g. [1, 0, 0] for AR(1) on levels or [0, 1, 0] for a random walk.");
+const order = () =>
+  z
+    .array(z.number().int().min(0).max(5))
+    .length(3)
+    .describe("[p, d, q]; p, q 0..5, d 0..2. [1,0,0] = AR(1) on levels, [0,1,0] = random walk.");
 
 /* ------------------------------ helpers ------------------------------ */
 
@@ -134,16 +135,12 @@ export function registerModelingTools(server: McpServer, client: FredClient) {
     {
       title: "Fit and compare ARIMA models",
       description:
-        "Fit several ARIMA(p,d,q) candidates by exact maximum likelihood, rank them by AICc, and run residual diagnostics " +
-        "(Ljung-Box, ARCH-LM, normality) on each. Flags insignificant terms, near-cancelling AR/MA roots and near unit roots. " +
-        "Returns coefficients and an h-step forecast with 80/95% intervals for the best model (or `forecast_order`), " +
-        'back-transformed to levels when transform = "log". In-sample fit does not prove forecasting skill: confirm the ' +
-        "choice with ts_backtest against a random walk.",
+        "Fit ARIMA candidates by exact MLE, rank by AICc within each d, check residuals, and flag insignificant terms, cancelling roots, over-differencing and extreme recent shocks. Forecasts with 80/95% intervals (levels if transform \"log\"). Confirm forecasting skill with ts_backtest.",
       inputSchema: {
         ...sourceShape,
         transform: levelTransform,
         orders: z
-          .array(order)
+          .array(order())
           .min(1)
           .max(12)
           .optional()
@@ -152,7 +149,7 @@ export function registerModelingTools(server: McpServer, client: FredClient) {
           ),
         constant: z.boolean().default(true).describe("Include a mean (d=0) or drift (d=1). Default true."),
         forecast_horizon: z.number().int().min(0).max(36).default(6).describe("Steps ahead to forecast. 0 = no forecast. Default 6."),
-        forecast_order: order.optional().describe("Order to forecast with. Default: the lowest-AICc candidate."),
+        forecast_order: order().optional().describe("Order to forecast with. Default: the lowest-AICc candidate."),
       },
       annotations: ANALYSIS,
     },
@@ -255,13 +252,9 @@ export function registerModelingTools(server: McpServer, client: FredClient) {
     {
       title: "Fit AR-GARCH(1,1) volatility model",
       description:
-        "Fit a mean model (zero, constant, or AR(p)) with GARCH(1,1) conditional variance and normal or Student-t errors, " +
-        "by maximum likelihood with robust standard errors (same conventions as Python's arch package). Reports persistence, " +
-        "half-life and unconditional volatility, tests the input for ARCH effects first, checks standardized residuals, and " +
-        "compares against the same model with constant variance so you can see whether GARCH is warranted. Use on a " +
-        'returns-like series (e.g. transform "log_diff") or on a log level with an AR mean.',
+        "Mean (zero/constant/AR) + GARCH(1,1) or constant variance, normal or Student-t errors, robust SEs. Pre-tests for ARCH effects and compares with constant variance, so it says when GARCH is not warranted. Use on log_diff, or on a log level with mean \"ar\".",
       inputSchema: {
-        ...seriesSourceShape,
+        ...seriesSourceShape(),
         mean: z.enum(["zero", "constant", "ar"]).default("constant").describe('Mean model. "ar" uses `ar_lags`. Default "constant".'),
         ar_lags: z.number().int().min(1).max(10).default(1).describe('AR lags when mean = "ar". Default 1.'),
         variance: z.enum(["garch", "constant"]).default("garch").describe('Conditional variance: "garch" = GARCH(1,1). Default "garch".'),
@@ -361,7 +354,7 @@ export function registerModelingTools(server: McpServer, client: FredClient) {
       kind: z
         .enum(["random_walk", "arima", "ar_garch"])
         .describe('"random_walk" (no-change forecast), "arima" (needs `order`), or "ar_garch" (AR mean + optional GARCH(1,1), normal or t).'),
-      order: order.optional(),
+      order: order().optional(),
       constant: z.boolean().optional().describe("arima: include mean/drift. Default true."),
       drift: z.boolean().optional().describe("random_walk: add drift. Default false."),
       ar_lags: z.number().int().min(0).max(5).optional().describe("ar_garch: AR lags (0 = constant mean). Default 1."),
@@ -376,11 +369,7 @@ export function registerModelingTools(server: McpServer, client: FredClient) {
     {
       title: "Rolling-origin forecast backtest",
       description:
-        "Out-of-sample comparison of forecasting models by rolling-origin evaluation: re-fit at every origin, forecast " +
-        "1..H steps ahead, and score against what actually happened. Reports RMSE relative to a benchmark (default: the " +
-        "first model, e.g. a random walk) with a Diebold-Mariano test (HLN-corrected), interval coverage at 80/95%, " +
-        "interval score and log predictive score, plus the same comparison split into ex-ante calm vs turbulent periods. " +
-        "This is the tool for claims like 'model X beats a random walk'. Runtime grows with origins x models (typically 5-30 s).",
+        "Rolling-origin out-of-sample comparison of up to 8 models against a benchmark (first model, e.g. random_walk): relative RMSE, Diebold-Mariano p-values, interval coverage, log score, calm vs turbulent split. Required before claiming a model beats a random walk. Takes 5-30 s.",
       inputSchema: {
         ...sourceShape,
         transform: backtestTransform,
@@ -399,7 +388,7 @@ export function registerModelingTools(server: McpServer, client: FredClient) {
           .min(20)
           .optional()
           .describe("Observations in the first training window. Default: 40% of the sample (at least 30)."),
-        step: z.number().int().min(1).max(24).default(1).describe("Origins advance by this many periods. Default 1."),
+        step: z.number().int().min(1).max(250).optional().describe("Origins advance by this many periods. Default 1, raised automatically to keep runtime bounded."),
         window: z.enum(["expanding", "rolling"]).default("expanding").describe("Expanding (all history) or rolling (fixed-length) training window."),
       },
       annotations: ANALYSIS,
@@ -424,15 +413,20 @@ export function registerModelingTools(server: McpServer, client: FredClient) {
       if (initial >= y.length - Math.min(...args.horizons)) {
         throw new ToolInputError(`initial_window (${initial}) leaves no out-of-sample data; the series has ${y.length} points.`);
       }
-      const origins = Math.ceil((y.length - initial) / args.step);
-      if (origins * specs.length > 4000) {
-        throw new ToolInputError(`${origins} origins x ${specs.length} models is too many fits; raise "step" or drop models.`);
+      // Keep the work bounded (each origin re-fits every model; fits scale with series length):
+      // about 1.5 million observation-fits, e.g. 220 origins x 7 models on 1,000 points.
+      const budget = 1_500_000;
+      const autoStep = Math.max(1, Math.ceil(((y.length - initial) * specs.length * y.length) / budget));
+      const step = args.step ?? autoStep;
+      const origins = Math.ceil((y.length - initial) / step);
+      if (origins * specs.length * y.length > 4 * budget) {
+        throw new ToolInputError(`${origins} origins x ${specs.length} models on ${y.length} points is too much work; raise "step", shorten the sample or drop models.`);
       }
       const t0 = Date.now();
       const r = backtest(y, specs, {
         initial,
         horizons: args.horizons,
-        step: args.step,
+        step,
         window: args.window,
         benchmark: args.benchmark,
       });
@@ -492,6 +486,8 @@ export function registerModelingTools(server: McpServer, client: FredClient) {
                 : s.transform === "diff"
                   ? "first differences"
                   : "original units",
+          step,
+          ...(args.step === undefined && step > 1 ? { step_note: `step raised to ${step} automatically to bound runtime; pass step to override` } : {}),
           elapsed_ms: Date.now() - t0,
           ...(Object.keys(r.failures).length ? { failed_fits: r.failures } : {}),
         },

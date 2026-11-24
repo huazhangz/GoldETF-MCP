@@ -40,9 +40,25 @@ not just the estimates. The case study shows each of these firing on real data.
 | Jarque-Bera with an explicit "Gaussian intervals misstate tail risk" | `ts_autocorrelation`, `ts_fit_arima` | Reporting normal prediction intervals for fat-tailed data |
 | Diebold-Mariano verdicts, plus shock concentration | `ts_backtest` | Claiming "beats the random walk" from a 2% RMSE difference |
 | Partial last month dropped when aggregating | data layer | Averages of the current month that are not comparable to the others |
+| Non-stationary levels flagged as likely spurious; `p_value_adjusted` with effective sample size | `ts_compare_series` | "Unemployment and the 10-year yield are correlated (p = 0.015)", when the adjusted p is 0.65 |
 | "Extreme shock in the last observations" | `ts_fit_arima` | Forecasting May 2020 unemployment at 24% from a fit dominated by April 2020 (statsmodels gives the same fit) |
 
-## 4. Keep data out of the context window
+## 4. Tool definitions cost context in every session
+
+Every client loads every tool definition into every conversation. The count is measured with
+`evals/tool-tokens.ts`, which uses the free count_tokens endpoint: 10 tools take about 8.6k tokens, down from
+11.8k. The reductions came from:
+
+- descriptions cut to what / when / what next;
+- `format: "date"` instead of a regex pattern on every date field;
+- options that are rarely needed (aggregation method, partial periods, seasonal period) kept only on
+  `fred_get_observations`;
+- the seasonal period inferred from the frequency.
+
+Shared zod fragments are factories, not shared instances. Reusing one instance twice in a schema makes
+zod-to-json-schema emit `$ref` pointers, which some MCP clients do not resolve.
+
+## 5. Keep data out of the context window
 
 - Analysis tools fetch data from a `series_id` themselves. The FRED client caches responses for 10 minutes, so
   a chain of calls, or `ts_test_stationarity` with five transforms, hits FRED once.
@@ -51,7 +67,7 @@ not just the estimates. The case study shows each of these firing on real data.
 - Numbers are rounded to 4-6 significant digits, and p-values below 1e-4 are reported as `"<1e-4"`.
 - `ts_backtest` returns aggregate scores per horizon, never per-origin forecasts.
 
-## 5. Errors the model can act on
+## 6. Errors the model can act on
 
 Every failure comes back as `isError: true` with **what went wrong and what to do**. Nothing surfaces as a
 protocol error that the client might hide.
@@ -70,7 +86,7 @@ protocol error that the client might hide.
 
 The API key is kept out of the cache key and never echoed back; a test asserts this.
 
-## 6. Correctness: two kinds of test
+## 7. Correctness: two kinds of test
 
 All numerics are plain TypeScript, so installing the server only requires `node`. To make that trustworthy,
 `test/stats/` separates **model correctness** from **optimizer quality**:
@@ -92,7 +108,7 @@ Standard errors: ARIMA uses the observed information (numerical Hessian), as R's
 defaults to OPG. GARCH uses Bollerslev-Wooldridge robust (sandwich) errors, as arch does. When a parameter sits
 on a boundary, it is held fixed and the rest are reported conditionally.
 
-## 7. Performance
+## 8. Performance and robustness
 
 A backtest re-fits every model at every origin. Two changes keep `ts_backtest` interactive (about 6 s for 7
 models × 143 origins):
@@ -101,6 +117,11 @@ models × 143 origins):
   avoids allocation in the hot loop. This made ARIMA(2,1,2) fits 9× faster, from 428 ms to 48 ms.
 - Backtests warm-start each fit from the previous origin's estimates and use a looser tolerance, which is
   adequate for forecasting.
+- `ts_backtest` raises `step` automatically when origins × models × series length would exceed a work budget,
+  so long daily series don't run past client timeouts.
+- The FRED client retries network errors, 429 and 5xx with jittered backoff, and keeps an LRU-capped cache.
+- Auxiliary checks degrade instead of failing the call. For example, a singular Granger regression or
+  stationarity test inside `ts_compare_series` is reported as such.
 
 ## Roadmap
 
@@ -115,4 +136,6 @@ models × 143 origins):
 - [ ] Run the eval on Claude (pilot, then 3 reps per variant) and publish the variant comparison
 - [x] Claude Code plugin + marketplace (`plugin/`, `.claude-plugin/marketplace.json`; validated with `claude plugin validate`)
 - [ ] Publish to npm (`npx fred-timeseries-mcp`) and the MCP Registry
-- [ ] Correlation / regression / Granger tools (the eval's out-of-scope case shows the gap)
+- [x] Correlation / lead-lag / Granger / HAC regression (`ts_compare_series`) and ALFRED vintages (`as_of`)
+- [ ] Real-time backtests that refetch the vintage at each origin
+- [ ] Progress notifications for long backtests
