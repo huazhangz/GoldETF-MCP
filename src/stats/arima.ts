@@ -443,6 +443,17 @@ function buildFit(
     warnings.push(`Near non-invertible MA (inverse root modulus ${maxMa.toFixed(3)}).`);
   }
   if (!converged) warnings.push("Optimizer stopped before converging; treat estimates with caution.");
+  // An extreme shock at the end of the sample dominates both the Gaussian MLE and the forecast
+  // (e.g. US unemployment in April 2020: an AR(1)-in-differences fit then predicts another +9.5 pp).
+  const zs = filt.v.map((v, t) => v / Math.sqrt(params.sigma2 * filt.F[t]!));
+  const tail = zs.slice(-3);
+  const zMax = Math.max(...tail.map(Math.abs));
+  if (zMax > 4) {
+    warnings.push(
+      `One of the last 3 observations is an extreme shock (standardized residual ${zMax.toFixed(1)}): Gaussian estimates and forecasts are dominated by it. ` +
+        "Compare with a Student-t model (ts_fit_garch, variance constant) or a random walk before using this forecast.",
+    );
+  }
 
   return {
     spec: { ...spec, constant },

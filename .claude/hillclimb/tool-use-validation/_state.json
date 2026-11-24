@@ -1,0 +1,36 @@
+{
+  "flow": "tool-use-validation",
+  "metrics": [
+    {
+      "id": "pass",
+      "label": "pass",
+      "kind": "binary"
+    },
+    {
+      "id": "tools_ok",
+      "label": "right tools",
+      "kind": "binary"
+    },
+    {
+      "id": "answer_ok",
+      "label": "right answer",
+      "kind": "binary"
+    },
+    {
+      "id": "no_shuttle",
+      "label": "no data copy",
+      "kind": "binary"
+    }
+  ],
+  "perf_fields": [
+    {
+      "id": "tool_calls",
+      "label": "tool calls"
+    },
+    {
+      "id": "latency_s",
+      "label": "latency",
+      "unit": "s"
+    }
+  ]
+}

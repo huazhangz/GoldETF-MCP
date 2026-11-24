@@ -170,7 +170,7 @@ export function ok(payload: unknown): CallToolResult {
 }
 
 const HINTS: Record<string, string> = {
-  missing_api_key: "Observation-based tools (fred_get_observations and all ts_* tools) still work without a key.",
+  missing_api_key: "Ask the user to configure FRED_API_KEY. Tools given inline `values` still work without a key.",
   invalid_api_key: "Ask the user to check FRED_API_KEY (32 lowercase alphanumeric characters).",
   not_found: "Call fred_search_series to find the correct series ID.",
   rate_limited: "Wait about a minute before retrying.",

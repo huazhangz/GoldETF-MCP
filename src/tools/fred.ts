@@ -64,6 +64,10 @@ export function registerFredTools(server: McpServer, client: FredClient) {
         coverage: `${s.observation_start} to ${s.observation_end}`,
         last_updated: s.last_updated,
         notes: notes && notes.length > 1200 ? `${notes.slice(0, 1200)}…` : notes,
+        third_party_copyright: /copyright/i.test(notes ?? ""),
+        ...(/copyright/i.test(notes ?? "")
+          ? { usage_note: "This series is owned by a third party. Beyond personal use, its owner's permission is required (FRED API terms)." }
+          : {}),
       });
     }),
   );

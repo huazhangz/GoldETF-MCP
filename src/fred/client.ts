@@ -4,8 +4,9 @@
  * - every failure becomes a FredError with a machine-readable `kind`
  * - responses are cached in memory for a short TTL so chained tool calls
  *   (get observations -> test stationarity -> autocorrelation) hit FRED once
- * - without an API key, observations fall back to FRED's public CSV download
- *   (fredgraph.csv, the endpoint pandas-datareader uses); search and metadata need a key
+ * - optional, opt-in fallback for personal use: without an API key, observations can be read from
+ *   FRED's public CSV download (fredgraph.csv, the endpoint pandas-datareader uses). Off by default:
+ *   distributed builds should use the user's own key, which binds the FRED API terms of use to them.
  */
 
 export interface FredSeries {
@@ -52,6 +53,8 @@ export interface FredClientOptions {
   apiKey: string | undefined;
   baseUrl?: string;
   csvUrl?: string;
+  /** Allow keyless reads of observations from fredgraph.csv. Default false. */
+  csvFallback?: boolean;
   fetch?: typeof fetch;
   timeoutMs?: number;
   cacheTtlMs?: number;
@@ -61,6 +64,7 @@ export class FredClient {
   private readonly apiKey: string | undefined;
   private readonly baseUrl: string;
   private readonly csvUrl: string;
+  private readonly csvFallback: boolean;
   private readonly fetchImpl: typeof fetch;
   private readonly timeoutMs: number;
   private readonly cacheTtlMs: number;
@@ -70,6 +74,7 @@ export class FredClient {
     this.apiKey = opts.apiKey;
     this.baseUrl = opts.baseUrl ?? "https://api.stlouisfed.org/fred";
     this.csvUrl = opts.csvUrl ?? "https://fred.stlouisfed.org/graph/fredgraph.csv";
+    this.csvFallback = opts.csvFallback ?? false;
     this.fetchImpl = opts.fetch ?? fetch;
     this.timeoutMs = opts.timeoutMs ?? 15_000;
     this.cacheTtlMs = opts.cacheTtlMs ?? 10 * 60_000;
@@ -92,7 +97,7 @@ export class FredClient {
     return s;
   }
 
-  /** True when search and metadata tools are usable. Observations work either way. */
+  /** True when search and metadata tools are usable. */
   get hasApiKey(): boolean {
     return Boolean(this.apiKey);
   }
@@ -100,7 +105,7 @@ export class FredClient {
   /** Native-frequency observations, oldest first. Aggregation is done locally by the caller. */
   async getObservations(seriesId: string, opts: { start?: string; end?: string } = {}): Promise<Observation[]> {
     let obs: Observation[];
-    if (this.apiKey) {
+    if (this.apiKey || !this.csvFallback) {
       const params: Record<string, string> = { series_id: seriesId };
       if (opts.start) params.observation_start = opts.start;
       if (opts.end) params.observation_end = opts.end;
@@ -152,8 +157,8 @@ export class FredClient {
     if (!this.apiKey) {
       throw new FredError(
         "missing_api_key",
-        "Searching FRED and reading series metadata need FRED_API_KEY. Get a free key at " +
-          'https://fredaccount.stlouisfed.org/apikeys and add it to the "env" block of this server in your MCP client config.',
+        "FRED_API_KEY is not set. Get a free key at https://fredaccount.stlouisfed.org/apikeys and add it to the " +
+          '"env" block of this server in your MCP client config (personal use without a key: set FRED_CSV_FALLBACK=1 for data-only access).',
       );
     }
     const url = new URL(`${this.baseUrl}/${path}`);

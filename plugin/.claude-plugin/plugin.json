@@ -1,0 +1,28 @@
+{
+  "name": "fred-timeseries",
+  "displayName": "FRED Time Series",
+  "version": "0.3.0",
+  "description": "FRED® economic data plus statistically honest time-series tools (STL, ADF/KPSS, ARCH-LM, ARIMA, AR-GARCH-t, rolling backtests) and a skill that tells the agent when each method is warranted. This product uses the FRED® API but is not endorsed or certified by the Federal Reserve Bank of St. Louis.",
+  "author": { "name": "Huazhang Zhou", "url": "https://github.com/huazhangz" },
+  "homepage": "https://github.com/huazhangz/GoldETF-MCP",
+  "repository": "https://github.com/huazhangz/GoldETF-MCP",
+  "license": "MIT",
+  "keywords": ["fred", "economics", "time-series", "forecasting", "arima", "garch", "mcp"],
+  "network": { "hosts": ["api.stlouisfed.org"] },
+  "mcpServers": {
+    "fred-timeseries": {
+      "command": "npx",
+      "args": ["-y", "fred-timeseries-mcp@0.3.0"],
+      "env": { "FRED_API_KEY": "${user_config.fred_api_key}" }
+    }
+  },
+  "userConfig": {
+    "fred_api_key": {
+      "type": "string",
+      "title": "FRED API key",
+      "description": "Free key from https://fredaccount.stlouisfed.org/apikeys (32 lowercase letters/digits). Required for search, metadata and data.",
+      "sensitive": true,
+      "required": true
+    }
+  }
+}

@@ -40,6 +40,7 @@ not just the estimates. The case study shows each of these firing on real data.
 | Jarque-Bera with an explicit "Gaussian intervals misstate tail risk" | `ts_autocorrelation`, `ts_fit_arima` | Reporting normal prediction intervals for fat-tailed data |
 | Diebold-Mariano verdicts, plus shock concentration | `ts_backtest` | Claiming "beats the random walk" from a 2% RMSE difference |
 | Partial last month dropped when aggregating | data layer | Averages of the current month that are not comparable to the others |
+| "Extreme shock in the last observations" | `ts_fit_arima` | Forecasting May 2020 unemployment at 24% from a fit dominated by April 2020 (statsmodels gives the same fit) |
 
 ## 4. Keep data out of the context window
 
@@ -58,7 +59,7 @@ protocol error that the client might hide.
 | Situation | Message gives the model |
 | --- | --- |
 | Unknown series ID (API or CSV path) | `not_found` and "Call fred_search_series to find the correct series ID." |
-| Search or metadata without a key | where to get a key, and that observation-based tools still work without one |
+| No API key | where to get a free key and where to put it; the opt-in `FRED_CSV_FALLBACK=1` for personal, data-only use |
 | `series_id` and `values` both given | "Provide exactly one of ..." |
 | `log` of a non-positive value | the offending date and value, and an alternative transform |
 | Too few points after differencing or aggregation | the count, the minimum, and "widen the date range" |
@@ -109,6 +110,9 @@ models × 143 origins):
 - [ ] Exogenous regressors (VIX, gold returns, real rates) in `ts_fit_arima` / `ts_backtest`
 - [ ] `outputSchema` + `structuredContent` for typed results; MCP resources for popular series; a prompt template
       for the analysis workflow
-- [ ] Tool-use evals: fixed natural-language tasks scored on whether the model picks the right tools and
-      arguments, and whether it respects the guardrails above (e.g. does it fit GARCH when ARCH-LM says no?)
+- [x] Tool-use evals (`evals/`): 20 two-sided cases with deterministic graders, validated with oracle/null/naive
+      scripted agents; variants for skill on/off, minimal descriptions, and guardrail text stripped
+- [ ] Run the eval on Claude (pilot, then 3 reps per variant) and publish the variant comparison
+- [x] Claude Code plugin + marketplace (`plugin/`, `.claude-plugin/marketplace.json`; validated with `claude plugin validate`)
 - [ ] Publish to npm (`npx fred-timeseries-mcp`) and the MCP Registry
+- [ ] Correlation / regression / Granger tools (the eval's out-of-scope case shows the gap)

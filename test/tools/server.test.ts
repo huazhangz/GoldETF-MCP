@@ -38,9 +38,11 @@ function fredRoute(url: URL) {
   return { status: 404, body: { error_message: "unknown endpoint" } };
 }
 
-async function setup(opts: { noKey?: boolean } = {}) {
+async function setup(opts: { noKey?: boolean; csvFallback?: boolean } = {}) {
   const f = fakeFetch(fredRoute);
-  const client = await connect(new FredClient({ apiKey: opts.noKey ? undefined : "test-key", fetch: f.fetch }));
+  const client = await connect(
+    new FredClient({ apiKey: opts.noKey ? undefined : "test-key", csvFallback: opts.csvFallback ?? opts.noKey, fetch: f.fetch }),
+  );
   return { client, calls: f.calls };
 }
 
@@ -192,12 +194,20 @@ describe("MCP server", () => {
       expect(text).toMatch(/not_found/);
     });
 
-    it("search without a key -> explains which tools still work", async () => {
+    it("search without a key -> setup instructions", async () => {
       const { client } = await setup({ noKey: true });
       const { r, text } = await call(client, "fred_search_series", { query: "gold" });
       expect(r.isError).toBe(true);
       expect(text).toMatch(/FRED_API_KEY/);
-      expect(text).toMatch(/still work without a key/);
+    });
+
+    it("no key and no CSV opt-in -> data tools ask for a key instead of scraping", async () => {
+      const { client, calls } = await setup({ noKey: true, csvFallback: false });
+      const { r, text } = await call(client, "fred_get_observations", { series_id: "GVZCLS" });
+      expect(r.isError).toBe(true);
+      expect(text).toMatch(/missing_api_key/);
+      expect(text).toMatch(/FRED_CSV_FALLBACK/);
+      expect(calls).toHaveLength(0);
     });
 
     it("both series_id and values -> explains the choice", async () => {

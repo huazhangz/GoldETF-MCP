@@ -3,7 +3,7 @@
  *
  *   npx tsx scripts/case_study.ts [--end 2026-04-30] [--out docs/case-study]
  *
- * Uses FRED's keyless CSV endpoint (no API key needed), connects an MCP client to the server
+ * Uses FRED_API_KEY when set, otherwise the opt-in public CSV fallback (personal research use); connects an MCP client to the server
  * in-memory, calls the tools in the order an analyst would, and writes:
  *   <out>/gvz-results.json   every tool call's arguments and full JSON result
  *   <out>/gvz-transcript.md  a readable log of the calls with the key numbers
@@ -23,7 +23,7 @@ const opt = (name: string, dflt: string) => {
 const END = opt("end", "2026-04-30"); // the course project's sample ended 2026-04-28
 const OUT = opt("out", "docs/case-study");
 
-const server = createServer(new FredClient({ apiKey: process.env.FRED_API_KEY }));
+const server = createServer(new FredClient({ apiKey: process.env.FRED_API_KEY, csvFallback: true }));
 const client = new Client({ name: "case-study", version: "1.0.0" });
 const [a, b] = InMemoryTransport.createLinkedPair();
 await Promise.all([server.connect(b), client.connect(a)]);

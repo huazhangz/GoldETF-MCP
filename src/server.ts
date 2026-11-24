@@ -5,7 +5,7 @@ import { registerAnalysisTools } from "./tools/analysis.js";
 import { registerModelingTools } from "./tools/modeling.js";
 
 export const SERVER_NAME = "fred-timeseries";
-export const SERVER_VERSION = "0.2.0";
+export const SERVER_VERSION = "0.3.0";
 
 export function createServer(client: FredClient): McpServer {
   const server = new McpServer(
@@ -16,7 +16,8 @@ export function createServer(client: FredClient): McpServer {
         "ts_decompose_stl (trend/seasonality) -> ts_test_stationarity (compare transforms) -> ts_autocorrelation (orders, ARCH " +
         "effects, normality) -> ts_fit_arima and, only if ARCH effects are present, ts_fit_garch -> ts_backtest against a random " +
         "walk before claiming forecasting skill. Analysis tools fetch data themselves from a series_id; do not copy long value " +
-        "arrays between calls. Observation-based tools work without an API key; search and metadata need FRED_API_KEY.",
+        "arrays between calls. Requires FRED_API_KEY. This product uses the FRED® API but is not endorsed or certified by " +
+        "the Federal Reserve Bank of St. Louis.",
     },
   );
   registerFredTools(server, client);

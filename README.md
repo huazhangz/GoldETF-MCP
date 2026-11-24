@@ -1,114 +1,131 @@
 # fred-timeseries-mcp
 
-An [MCP](https://modelcontextprotocol.io) server that gives Claude (or any MCP client) access to
-[FRED](https://fred.stlouisfed.org) economic data **and a complete time-series modeling workflow**. The
-workflow covers STL decomposition, stationarity tests, ACF/PACF, ARCH effects, ARIMA and AR-GARCH-t estimation,
-and rolling-origin backtests against a random walk.
+An [MCP](https://modelcontextprotocol.io) server and Claude Code plugin that gives an AI agent
+[FRED®](https://fred.stlouisfed.org) economic data **and a statistically honest time-series workflow**:
 
-Every statistic is implemented in TypeScript, so the only install requirement is `node`. The results are
-checked against statsmodels / arch / scipy. Log-likelihoods match to 1e-7 or better at identical parameters, and STL, ADF,
-KPSS and the diagnostics match to 1e-8 or better.
+- STL decomposition
+- stationarity tests
+- ACF/PACF and ARCH effects
+- ARIMA and AR-GARCH-t estimation
+- rolling-origin backtests against a random walk
 
-> "Pull GVZCLS as monthly averages, check whether a GARCH model is warranted, and tell me honestly whether any
-> model beats a random walk."
+It ships with a skill that tells the agent when each method is warranted.
 
-For a worked example, see the **[GVZ case study](docs/case-study/README.md)**. It redoes a course project
-entirely through these tools. It finds that the course's ARIMA(2,1,2) is over-differenced and forecasts worse
-than a random walk, and that GARCH is not warranted at monthly frequency (it is at daily frequency). Nothing
-beats the random walk significantly, because a few fat-tailed shocks dominate the loss.
+> This product uses the FRED® API but is not endorsed or certified by the Federal Reserve Bank of St. Louis.
+> Not investment advice.
+
+**Why it exists:** an agent with a GARCH tool will fit GARCH, and an agent with a forecasting tool will report a
+forecast. These tools return the evidence for and against each method along with the estimates. They decline
+GARCH when there is no volatility clustering, flag over-differenced and outlier-dominated ARIMA fits, and only
+call a model better than a random walk when a Diebold-Mariano test says so.
+
+| Question | What the tools find (data through 2026-10) |
+| --- | --- |
+| Is monthly CPI inflation forecastable? | **Yes.** AR(1) beats the random walk out of sample (RMSE -18% at 1 month, -35% at 3 months, DM p < 0.05) |
+| Can a model beat a random walk for the 10-year yield or gold volatility (GVZ)? | **No**, not significantly |
+| Does monthly GVZ need GARCH? | **No** (ARCH-LM p = 0.99). Daily GVZ and VIX do (p < 1e-4) |
+| Are housing starts seasonal? | **Strongly** (F_S = 0.77). Gold volatility is not (F_S = 0.02) |
+
+Worked example: the **[GVZ case study](docs/case-study/README.md)** redoes a course forecasting project
+entirely through these tools.
 
 ## Tools
 
 | Tool | What it does |
 | --- | --- |
-| `fred_search_series` | Keyword search to get series IDs (e.g. "gold volatility" finds `GVZCLS`). Needs a key. |
-| `fred_get_series_info` | Metadata: units, native frequency, coverage, notes. Needs a key. |
-| `fred_get_observations` | Data with local aggregation (daily to monthly etc.; partial periods dropped) and log/diff transforms. Returns summary stats and a capped number of points. |
-| `ts_decompose_stl` | STL decomposition (port of the reference Fortran), trend/seasonal strength F_T / F_S, monthly seasonal effects, dated largest shocks |
+| `fred_search_series` / `fred_get_series_info` | Find series IDs. Metadata includes native frequency, coverage, and whether the series is third-party copyrighted |
+| `fred_get_observations` | Data with local aggregation (partial periods dropped unless requested) and log/diff/seasonal transforms; summary stats and a capped number of points |
+| `ts_decompose_stl` | STL (port of the reference Fortran), F_T / F_S, monthly seasonal effects, dated largest shocks |
 | `ts_test_stationarity` | ADF + KPSS with a combined verdict; compares several transforms in one call |
-| `ts_autocorrelation` | ACF/PACF with significant lags, Ljung-Box, **ARCH-LM** and squared-ACF (is GARCH warranted?), Jarque-Bera |
-| `ts_fit_arima` | Fits and ranks ARIMA candidates by AICc *within* each d. Exact Kalman-filter MLE, Hessian SEs, residual diagnostics, warnings for insignificant terms, cancelling or near-unit roots and over-differencing; forecasts back-transformed to levels |
-| `ts_fit_garch` | Zero/constant/AR mean, GARCH(1,1) or constant variance, normal or Student-t errors (arch conventions, robust SEs). Pre-tests for ARCH effects and compares against constant variance |
-| `ts_backtest` | Rolling-origin evaluation of up to 8 models: relative RMSE, Diebold-Mariano (HLN) vs benchmark, 80/95% coverage, interval score, log score, calm-vs-turbulent split, shock concentration |
+| `ts_autocorrelation` | ACF/PACF with significant lags, Ljung-Box, ARCH-LM and squared ACF, Jarque-Bera |
+| `ts_fit_arima` | Exact-MLE ARIMA candidates ranked by AICc *within* each d. Warns on insignificant terms, cancelling roots, over-differencing and extreme recent shocks. Forecasts are back-transformed to levels |
+| `ts_fit_garch` | Zero/constant/AR mean, GARCH(1,1) or constant variance, normal or Student-t (arch conventions, robust SEs). Pre-tests for ARCH effects and compares against constant variance |
+| `ts_backtest` | Rolling-origin evaluation of up to 8 models on levels or growth rates. Reports relative RMSE, Diebold-Mariano (HLN) tests, 80/95% coverage, interval and log scores, and a calm/turbulent split |
 
-The analysis tools fetch data themselves from a `series_id` (with a 10-minute cache), so the model never copies
-arrays between calls. They also accept inline `values`, for example model residuals.
+All statistics are plain TypeScript, so installation only needs `node`. They are checked against statsmodels /
+arch / scipy: log-likelihoods match to 1e-7 or better at identical parameters, and STL, ADF, KPSS and the
+diagnostics match to 1e-8.
 
-**No API key needed for data:** without `FRED_API_KEY`, observations come from FRED's public CSV download, so
-every `fred_get_observations` and `ts_*` call works. Only search and metadata need a free key.
+## Install
 
-## Setup
+You need a free FRED API key: <https://fredaccount.stlouisfed.org/apikeys>.
 
-```bash
-git clone https://github.com/huazhangz/GoldETF-MCP.git && cd GoldETF-MCP
-npm install && npm run build
+**Claude Code plugin** (MCP server + skill; prompts for the key and stores it in the system keychain):
+
+```
+/plugin install fred-timeseries --marketplace huazhangz/GoldETF-MCP
 ```
 
-**Claude Code**
-
-```bash
-claude mcp add fred-timeseries -e FRED_API_KEY=your_key -- node /absolute/path/to/GoldETF-MCP/dist/index.js
-```
-
-**Claude Desktop** (`claude_desktop_config.json`) or **Cursor** (`.cursor/mcp.json`)
+**Any MCP client** (Claude Desktop `claude_desktop_config.json`, Cursor `.cursor/mcp.json`, ...):
 
 ```json
 {
   "mcpServers": {
     "fred-timeseries": {
-      "command": "node",
-      "args": ["/absolute/path/to/GoldETF-MCP/dist/index.js"],
+      "command": "npx",
+      "args": ["-y", "fred-timeseries-mcp"],
       "env": { "FRED_API_KEY": "your_key" }
     }
   }
 }
 ```
 
-The `env` block is optional. Get a free key at <https://fredaccount.stlouisfed.org/apikeys>.
+The `npx` package name assumes the npm release. Until then, build from source with `npm install && npm run build`
+and point `command`/`args` at `node /path/to/dist/index.js`.
+
+`FRED_CSV_FALLBACK=1` lets you read observations without a key from FRED's public CSV downloads. It is meant for
+personal use only; search and metadata still need a key.
+
+## Evaluation
+
+`evals/` measures whether an agent *uses* the tools well, not just whether the statistics are right. The suite
+has 20 cases, each graded on two deterministic checks: did the agent call the right tools, and is the answer
+correct and consistent with what the tools returned? Coverage is two-sided: decline GARCH vs fit GARCH, "nothing
+beats the random walk" vs "a model does", strong vs no seasonality, use tools vs answer without them.
+
+Four variants separate what each layer contributes:
+
+- `baseline`: as shipped
+- `v1`: with the skill
+- `v2`: minimal tool descriptions
+- `v3`: guardrail text stripped from tool outputs
+
+The graders were checked with scripted agents. A correct agent passes 20/20, while an agent that answers
+"I don't know" and an agent that is plausible but wrong both pass 0/20. See [evals/README.md](evals/README.md).
 
 ## Development
 
 ```bash
-npm test          # 93 tests: parity with statsmodels/arch/scipy + in-memory MCP end-to-end tests
+npm test          # 94 tests: statsmodels/arch/scipy parity + in-memory MCP end-to-end
 npm run typecheck
-npm run inspect   # MCP Inspector against the built server
 ```
-
-To reproduce the case study (it fetches live data; behind a proxy, Node needs `NODE_USE_ENV_PROXY=1`):
 
 ```bash
-npx tsx scripts/case_study.ts
+npx tsx scripts/case_study.ts                                # GVZ case study
+NODE_USE_ENV_PROXY=1 npx tsx evals/validate-graders.ts       # grader validation (no model calls)
 ```
-
-To re-run the backtest independently with statsmodels/arch:
 
 ```bash
-python scripts/verify_case_study.py
+python scripts/verify_case_study.py                          # independent statsmodels/arch re-run
+python scripts/gen_reference.py                              # regenerate test fixtures
 ```
 
-To regenerate the test fixtures:
-
-```bash
-python scripts/gen_reference.py
-```
-
-The two Python scripts need `pip install statsmodels arch`. `scripts/gen_reference.py` uses only seeded
-synthetic data.
+The two Python scripts need `pip install statsmodels arch`.
 
 ```
-src/
-  fred/client.ts        FRED REST + keyless CSV, typed errors, cache
-  stats/                pure numerics (no I/O): adf, kpss, autocorrelation, diagnostics, stl,
-                        arima (Kalman MLE), volatility (AR-GARCH-t), backtest, evaluation, aggregate
-  tools/                MCP tool definitions: fred, analysis, modeling
-test/                   parity fixtures + end-to-end tests through a real MCP client
-scripts/                case study, cross-check, fixture generator
-docs/                   DESIGN.md (tool-design notes), case-study/
+src/stats/   pure numerics: adf, kpss, autocorrelation, diagnostics, stl, arima (Kalman MLE),
+             volatility (AR-GARCH-t), backtest, evaluation, aggregate
+src/tools/   MCP tool definitions        src/fred/  FRED client (API + opt-in CSV)
+plugin/      Claude Code plugin: manifest + skills/fred-timeseries/SKILL.md
+evals/       tool-use eval: cases, graders, fixture, agent loop, runner
+test/        parity fixtures + end-to-end tests      docs/  DESIGN.md, case-study/
 ```
 
-Design notes on naming, descriptions, error handling, and tools that tell the model when *not* to use a method
-are in [docs/DESIGN.md](docs/DESIGN.md).
+Design notes (naming, descriptions, guardrails, error handling) are in [docs/DESIGN.md](docs/DESIGN.md).
 
-## License
+## License and data
 
-MIT. GVZ and other series are the property of their sources and are fetched from FRED at run time.
+The code is MIT licensed. Data come from FRED at run time under the user's own API key and the
+[FRED API terms](https://fred.stlouisfed.org/docs/api/terms_of_use.html). Some series are owned by third parties
+(for example CBOE's VIX and GVZ). Beyond personal use, their owners' permission is required; `fred_get_series_info`
+flags these series.

@@ -1,0 +1,14 @@
+{
+  "name": "fred-timeseries-tools",
+  "description": "FRED time-series analysis plugin: MCP server + skill.",
+  "owner": { "name": "Huazhang Zhou", "url": "https://github.com/huazhangz" },
+  "plugins": [
+    {
+      "name": "fred-timeseries",
+      "source": "./plugin",
+      "description": "FRED® data and honest time-series diagnostics, models and backtests for Claude Code.",
+      "category": "data-analysis",
+      "tags": ["economics", "finance", "forecasting", "statistics"]
+    }
+  ]
+}

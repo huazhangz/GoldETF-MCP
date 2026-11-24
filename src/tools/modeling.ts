@@ -20,6 +20,14 @@ const levelTransform = z
 
 const { transform: _omit, ...sourceShape } = seriesSourceShape;
 
+/** Backtests can also run on growth rates (e.g. monthly inflation = log_diff of a price index). */
+const backtestTransform = z
+  .enum(["none", "log", "diff", "log_diff"])
+  .default("none")
+  .describe(
+    'Scale the models forecast and are scored on: "log" for positive right-skewed levels (volatility indices, prices); "log_diff" to forecast growth rates such as monthly inflation from a price index.',
+  );
+
 const order = z
   .array(z.number().int().min(0).max(5))
   .length(3)
@@ -375,7 +383,7 @@ export function registerModelingTools(server: McpServer, client: FredClient) {
         "This is the tool for claims like 'model X beats a random walk'. Runtime grows with origins x models (typically 5-30 s).",
       inputSchema: {
         ...sourceShape,
-        transform: levelTransform,
+        transform: backtestTransform,
         models: z
           .array(modelSpec)
           .min(2)
@@ -476,7 +484,14 @@ export function registerModelingTools(server: McpServer, client: FredClient) {
           origins: r.origins,
           first_origin: dateAt(r.firstOrigin),
           last_origin: dateAt(r.lastOrigin),
-          loss_scale: s.transform === "log" ? "log scale (errors are approximately relative errors)" : "original units",
+          loss_scale:
+            s.transform === "log"
+              ? "log scale (errors are approximately relative errors)"
+              : s.transform === "log_diff"
+                ? "log changes (errors in growth-rate units)"
+                : s.transform === "diff"
+                  ? "first differences"
+                  : "original units",
           elapsed_ms: Date.now() - t0,
           ...(Object.keys(r.failures).length ? { failed_fits: r.failures } : {}),
         },
